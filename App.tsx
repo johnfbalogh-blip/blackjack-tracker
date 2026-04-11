@@ -348,7 +348,7 @@ export default function App() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
           <div className="title-row">
             <div>
-              <h1 className="title">Blackjack Session Tracker</h1>
+              <h1 className="title">Blackjack Session Tracker V2</h1>
               <p className="subtitle">
                 Track buy-ins, rebuys, cash-out, money left in your pocket, actual result, bankroll, and time at the table.
               </p>
