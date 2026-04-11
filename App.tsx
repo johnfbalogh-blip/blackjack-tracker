@@ -101,8 +101,8 @@ function downloadCSV(rows: Session[]) {
     headers.join(","),
     ...preparedRows.map((r: Session & { runningPerceived: number }) => [
       r.startTime ? new Date(r.startTime).toLocaleDateString() : "",
-      `"${(r.location || "").replaceAll('"', '""')}"`,
-      `"${(r.game || "").replaceAll('"', '""')}"`,
+      `"${(r.location || "").replace(/"/g, '""')}"`,
+      `"${(r.game || "").replace(/"/g, '""')}"`,
       r.initialBuyIn,
       r.rebuyTotal,
       r.buyIn,
@@ -115,7 +115,7 @@ function downloadCSV(rows: Session[]) {
       `"${r.startTime || ""}"`,
       `"${r.endTime || ""}"`,
       r.hours.toFixed(2),
-      `"${(r.notes || "").replaceAll('"', '""')}"`,
+      `"${(r.notes || "").replace(/"/g, '""')}"`,
     ].join(",")),
   ].join("\n");
 
