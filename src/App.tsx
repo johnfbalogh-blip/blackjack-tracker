@@ -101,8 +101,8 @@ function downloadCSV(rows: Session[]) {
     headers.join(","),
     ...preparedRows.map((r: Session & { runningPerceived: number }) => [
       r.startTime ? new Date(r.startTime).toLocaleDateString() : "",
-      `"${(r.location || "").replaceAll('"', '""')}"`,
-      `"${(r.game || "").replaceAll('"', '""')}"`,
+      `"${(r.location || "").replace(/"/g, '""')}"`,
+      `"${(r.game || "").replace(/"/g, '""')}"`,
       r.initialBuyIn,
       r.rebuyTotal,
       r.buyIn,
@@ -115,7 +115,7 @@ function downloadCSV(rows: Session[]) {
       `"${r.startTime || ""}"`,
       `"${r.endTime || ""}"`,
       r.hours.toFixed(2),
-      `"${(r.notes || "").replaceAll('"', '""')}"`,
+      `"${(r.notes || "").replace(/"/g, '""')}"`,
     ].join(",")),
   ].join("\n");
 
@@ -165,7 +165,7 @@ export default function App() {
     notes: "",
   });
 
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<Session[]>(() => {   const saved = localStorage.getItem("blackjack-sessions");   return saved ? JSON.parse(saved) : []; });
   const [isRunning, setIsRunning] = useState(false);
   const [timerNow, setTimerNow] = useState(Date.now());
   const [manualHours, setManualHours] = useState("");
@@ -180,6 +180,9 @@ export default function App() {
     const interval = setInterval(() => setTimerNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [isRunning]);
+  useEffect(() => {
+  localStorage.setItem("blackjack-sessions", JSON.stringify(sessions));
+}, [sessions]);
 
   const rebuyTotal = useMemo(() => rebuys.reduce((sum, value) => sum + value, 0), [rebuys]);
 
