@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Clock3,
-  DollarSign,
   Download,
-  Flag,
   Pencil,
+  Play,
   PlusCircle,
   RotateCcw,
   Square,
@@ -12,12 +11,15 @@ import {
   TrendingDown,
   TrendingUp,
   Wallet,
-  Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+type SessionStatus = "active" | "completed";
+
 type Session = {
+  runningPerceived?: number;
   id: string;
+  status: SessionStatus;
   location: string;
   game: string;
   initialBuyIn: number;
@@ -67,18 +69,22 @@ function fmtElapsed(ms: number) {
   return `${hours}:${minutes}:${seconds}`;
 }
 
-function withRunningPerceived(rows: Session[]) {
+function withRunningPerceived(rows: Session[]): Array<Session & { runningPerceived: number }> {
   let running = 0;
-  const chronological = [...rows].reverse().map((row) => {
-    running += row.perceived;
-    return { ...row, runningPerceived: running };
-  });
+  const chronological = [...rows]
+    .filter((row) => row.status === "completed")
+    .reverse()
+    .map((row) => {
+      running += row.perceived;
+      return { ...row, runningPerceived: running };
+    });
   return chronological.reverse();
 }
 
 function downloadCSV(rows: Session[]) {
   const preparedRows = withRunningPerceived(rows);
   const headers = [
+    "Status",
     "Date",
     "Location",
     "Game",
@@ -86,11 +92,11 @@ function downloadCSV(rows: Session[]) {
     "Rebuy Total",
     "Total Buy In",
     "Cash Out",
-    "In Pocket",
-    "Needs Pocket",
-    "Actual Win Loss",
-    "Perceived Win Loss",
-    "Running Perceived Total",
+    "REMOVED",
+    "Open Session",
+    "Win Loss",
+    "Total Win/Loss",
+    "Running Total Win/Loss",
     "Start Time",
     "End Time",
     "Hours",
@@ -99,65 +105,102 @@ function downloadCSV(rows: Session[]) {
 
   const csv = [
     headers.join(","),
-    ...preparedRows.map((r: Session & { runningPerceived: number }) => [
-      r.startTime ? new Date(r.startTime).toLocaleDateString() : "",
-      `"${(r.location || "").replace(/"/g, '""')}"`,
-      `"${(r.game || "").replace(/"/g, '""')}"`,
-      r.initialBuyIn,
-      r.rebuyTotal,
-      r.buyIn,
-      r.cashOut,
-      r.pocket,
-      r.pocket === 0 ? "YES" : "",
-      r.actual,
-      r.perceived,
-      r.runningPerceived,
-      `"${r.startTime || ""}"`,
-      `"${r.endTime || ""}"`,
-      r.hours.toFixed(2),
-      `"${(r.notes || "").replace(/"/g, '""')}"`,
-    ].join(",")),
+    ...preparedRows.map((r: Session & { runningPerceived: number }) =>
+      [
+        r.status,
+        r.startTime ? new Date(r.startTime).toLocaleDateString() : "",
+        `"${(r.location || "").replace(/"/g, '""')}"`,
+        `"${(r.game || "").replace(/"/g, '""')}"`,
+        r.initialBuyIn,
+        r.rebuyTotal,
+        r.buyIn,
+        r.cashOut,
+        r.pocket,
+        r.status === "active" ? "YES" : "",
+        r.actual,
+        r.perceived,
+        r.runningPerceived,
+        `"${r.startTime || ""}"`,
+        `"${r.endTime || ""}"`,
+        r.hours.toFixed(2),
+        `"${(r.notes || "").replace(/"/g, '""')}"`,
+      ].join(",")
+    ),
   ].join("\n");
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.setAttribute("download", "blackjack_sessions.csv");
+  link.setAttribute("download", `session_tracker_${new Date().toISOString().slice(0,10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
 
-function StatCard({ title, value, icon: Icon }: { title: string; value: string; icon: React.ComponentType<{ className?: string }> }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="card stat-card">
-      <div>
-        <div className="stat-title">{title}</div>
-        <div className="stat-value">{value}</div>
-      </div>
-      <div className="icon-badge">
-        <Icon className="icon" />
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
-  return (
-    <label className="field">
-      <span className="label" id={htmlFor ? `${htmlFor}-label` : undefined}>{label}</span>
+    <label className="block space-y-2">
+      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
       {children}
     </label>
   );
 }
 
+function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className={`h-14 w-full rounded-2xl border border-slate-200 bg-white px-4 text-lg shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 ${props.className || ""}`}
+    />
+  );
+}
+
+function SmallStat({
+  icon: Icon,
+  label,
+  value,
+  tone = "default",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  tone?: "default" | "positive" | "negative";
+}) {
+  const toneClass =
+    tone === "positive"
+      ? "text-emerald-600"
+      : tone === "negative"
+      ? "text-red-600"
+      : "text-slate-900";
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <Icon className="h-4 w-4" />
+        {label}
+      </div>
+      <div className={`text-lg font-semibold ${toneClass}`}>{value}</div>
+    </div>
+  );
+}
+
 export default function App() {
-  const [form, setForm] = useState({
+  const [startForm, setStartForm] = useState({
     location: "",
     game: "Blackjack",
     buyIn: "",
+  });
+  const [lastBuyIn, setLastBuyIn] = useState("");
+  const [finishForm, setFinishForm] = useState({
+    cashOut: "",
+    pocket: "",
+  });
+  const [editForm, setEditForm] = useState({
+    location: "",
+    game: "Blackjack",
+    initialBuyIn: "",
     cashOut: "",
     pocket: "",
     startTime: toLocalInputValue(),
@@ -165,394 +208,1212 @@ export default function App() {
     notes: "",
   });
 
-  const [sessions, setSessions] = useState<Session[]>(() => {   const saved = localStorage.getItem("blackjack-sessions");   return saved ? JSON.parse(saved) : []; });
-  const [isRunning, setIsRunning] = useState(false);
+  const [sessions, setSessions] = useState<Session[]>(() => {
+    if (typeof window === "undefined") return [];
+    const saved = window.localStorage.getItem("blackjack-sessions");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [timerNow, setTimerNow] = useState(Date.now());
-  const [manualHours, setManualHours] = useState("");
-  const [quickEntry, setQuickEntry] = useState(false);
   const [rebuyAmount, setRebuyAmount] = useState("");
-  const [rebuys, setRebuys] = useState<number[]>([]);
+  const [editRebuyAmount, setEditRebuyAmount] = useState("");
+  const [editRebuys, setEditRebuys] = useState<number[]>([]);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-  const [startingBankroll, setStartingBankroll] = useState("");
+  const [manualHours, setManualHours] = useState("");
+  const [startingBankroll, setStartingBankroll] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const saved = window.localStorage.getItem("starting-bankroll");
+    return saved ? saved : "";
+  });
+  const [bankrollAdd, setBankrollAdd] = useState("");
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [lastClearedData, setLastClearedData] = useState<{
+    sessions: Session[];
+    startingBankroll: string;
+  } | null>(null);
+  const buyInHoldTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
 
   useEffect(() => {
-    if (!isRunning) return undefined;
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("blackjack-sessions", JSON.stringify(sessions));
+  }, [sessions]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("starting-bankroll", startingBankroll);
+  }, [startingBankroll]);
+
+  const activeSession = useMemo(
+    () => sessions.find((s) => s.status === "active") || null,
+    [sessions]
+  );
+
+  const openSessionCount = useMemo(
+    () => sessions.filter((s) => s.status === "active").length,
+    [sessions]
+  );
+
+  const openSessionWarning = useMemo(
+    () => sessions.find((s) => s.status === "active") || null,
+    [sessions]
+  );
+
+  useEffect(() => {
+    if (!activeSession) return undefined;
     const interval = setInterval(() => setTimerNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [isRunning]);
+  }, [activeSession]);
+
   useEffect(() => {
-  localStorage.setItem("blackjack-sessions", JSON.stringify(sessions));
-}, [sessions]);
+    if (!activeSession || editingSessionId) return;
+    setFinishForm({
+      cashOut: activeSession.cashOut ? String(activeSession.cashOut) : "",
+      pocket: activeSession.pocket ? String(activeSession.pocket) : "",
+    });
+  }, [activeSession, editingSessionId]);
 
-  const rebuyTotal = useMemo(() => rebuys.reduce((sum, value) => sum + value, 0), [rebuys]);
+  const completedSessions = useMemo(
+    () => sessions.filter((session) => session.status === "completed"),
+    [sessions]
+  );
 
-  const totalBuyIn = useMemo(() => Number(form.buyIn || 0) + rebuyTotal, [form.buyIn, rebuyTotal]);
-
-  const actual = useMemo(() => {
-    const cashOut = Number(form.cashOut || 0);
-    const pocket = Number(form.pocket || 0);
-    return cashOut + pocket - totalBuyIn;
-  }, [form.cashOut, form.pocket, totalBuyIn]);
-
-  const hours = useMemo(() => {
-    if (manualHours !== "" && !Number.isNaN(Number(manualHours))) return Number(manualHours);
-    return fmtHours(form.startTime, form.endTime);
-  }, [form.startTime, form.endTime, manualHours]);
-
-  const liveElapsed = useMemo(() => {
-    if (!form.startTime) return "00:00:00";
-    const start = new Date(form.startTime).getTime();
-    const end = isRunning ? timerNow : new Date(form.endTime).getTime();
-    if (Number.isNaN(start) || Number.isNaN(end) || end < start) return "00:00:00";
-    return fmtElapsed(end - start);
-  }, [form.startTime, form.endTime, isRunning, timerNow]);
+  const sessionsWithRunningTotals = useMemo(
+    () => withRunningPerceived(completedSessions),
+    [completedSessions]
+  );
 
   const summary = useMemo(() => {
-    const totalActual = sessions.reduce((sum, s) => sum + s.actual, 0);
-    const totalHours = sessions.reduce((sum, s) => sum + s.hours, 0);
+    const totalActual = completedSessions.reduce((sum, s) => sum + s.actual, 0);
+    const totalHours = completedSessions.reduce((sum, s) => sum + s.hours, 0);
     const hourly = totalHours > 0 ? totalActual / totalHours : 0;
-    const needsPocketCount = sessions.filter((s) => s.pocket === 0).length;
+    const needsPocketCount = openSessionCount;
     const bankroll = Number(startingBankroll || 0) + totalActual;
     return { totalActual, totalHours, hourly, needsPocketCount, bankroll };
-  }, [sessions, startingBankroll]);
+  }, [completedSessions, startingBankroll, openSessionCount]);
 
-  const sessionsWithRunningTotals = useMemo(() => withRunningPerceived(sessions), [sessions]);
+  const activeElapsed = useMemo(() => {
+    if (!activeSession?.startTime) return "00:00:00";
+    const start = new Date(activeSession.startTime).getTime();
+    if (Number.isNaN(start)) return "00:00:00";
+    return fmtElapsed(timerNow - start);
+  }, [activeSession, timerNow]);
 
-  const resetCurrentSession = () => {
-    setEditingSessionId(null);
-    setForm((prev) => ({
-      ...prev,
+  const activeHours = useMemo(() => {
+    if (!activeSession?.startTime) return 0;
+    const start = new Date(activeSession.startTime).getTime();
+    if (Number.isNaN(start)) return 0;
+    return Math.max(0, (timerNow - start) / (1000 * 60 * 60));
+  }, [activeSession, timerNow]);
+
+  const finishRebuyTotal = useMemo(
+    () => (activeSession?.rebuys || []).reduce((sum, value) => sum + value, 0),
+    [activeSession]
+  );
+
+  const finishTotalBuyIn = useMemo(
+    () => Number(activeSession?.initialBuyIn || 0) + finishRebuyTotal,
+    [activeSession, finishRebuyTotal]
+  );
+
+  const finishActual = useMemo(() => {
+    const cashOut = Number(finishForm.cashOut || 0);
+    const pocket = Number(finishForm.pocket || 0);
+    return cashOut + pocket - finishTotalBuyIn;
+  }, [finishForm.cashOut, finishForm.pocket, finishTotalBuyIn]);
+
+  const resetStartForm = () => {
+    setStartForm({
+      location: "",
+      game: "Blackjack",
       buyIn: "",
+    });
+  };
+
+  const resetFinishForm = () => {
+    setFinishForm({
+      cashOut: "",
+      pocket: "",
+    });
+    setRebuyAmount("");
+  };
+
+  const resetEditForm = () => {
+    setEditingSessionId(null);
+    setEditForm({
+      location: "",
+      game: "Blackjack",
+      initialBuyIn: "",
       cashOut: "",
       pocket: "",
       startTime: toLocalInputValue(),
       endTime: toLocalInputValue(),
       notes: "",
-    }));
+    });
+    setEditRebuyAmount("");
+    setEditRebuys([]);
     setManualHours("");
-    setRebuyAmount("");
-    setRebuys([]);
-    setIsRunning(false);
   };
 
-  const addRebuy = (amountOverride?: number) => {
-    const amount = Number(amountOverride ?? rebuyAmount);
-    if (!amount || amount <= 0) return;
-    setRebuys((prev) => [...prev, amount]);
-    setRebuyAmount("");
-  };
+  const startSession = () => {
+    setLastBuyIn(startForm.buyIn);
+    if (activeSession) return;
+    const now = toLocalInputValue();
+    const initialBuyIn = Number(startForm.buyIn || 0);
 
-  const removeRebuy = (index: number) => {
-    setRebuys((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const getQuickEntryStartTime = () => {
-    const mostRecent = sessions[0];
-    if (quickEntry && mostRecent?.endTime) return mostRecent.endTime;
-    return form.startTime || toLocalInputValue();
-  };
-
-  const saveSession = () => {
-    const initialBuyIn = Number(form.buyIn || 0);
-    const buyIn = initialBuyIn + rebuyTotal;
-    const cashOut = Number(form.cashOut || 0);
-    const pocket = Number(form.pocket || 0);
-
-    const resolvedStartTime = quickEntry && !editingSessionId ? getQuickEntryStartTime() : form.startTime;
-    const resolvedEndTime = quickEntry && !editingSessionId ? toLocalInputValue() : form.endTime;
-
-    const sessionHours = manualHours !== "" && !Number.isNaN(Number(manualHours))
-      ? Number(manualHours)
-      : fmtHours(resolvedStartTime, resolvedEndTime);
-
-    const sessionData: Session = {
-      id: editingSessionId ?? crypto.randomUUID(),
-      location: form.location.trim(),
-      game: form.game.trim() || "Blackjack",
+    const newSession: Session = {
+      id: crypto.randomUUID(),
+      status: "active",
+      location: startForm.location.trim(),
+      game: startForm.game.trim() || "Blackjack",
       initialBuyIn,
-      rebuyTotal,
-      rebuys: [...rebuys],
-      buyIn,
-      cashOut,
-      pocket,
-      actual: cashOut + pocket - buyIn,
-      perceived: cashOut - buyIn,
-      startTime: resolvedStartTime,
-      endTime: resolvedEndTime,
-      hours: sessionHours,
-      notes: form.notes.trim(),
+      rebuyTotal: 0,
+      rebuys: [],
+      buyIn: initialBuyIn,
+      cashOut: 0,
+      pocket: 0,
+      actual: 0,
+      perceived: 0,
+      startTime: now,
+      endTime: now,
+      hours: 0,
+      notes: "",
     };
 
-    if (editingSessionId) {
-      setSessions((prev) => prev.map((session) => (session.id === editingSessionId ? sessionData : session)));
-    } else {
-      setSessions((prev) => [sessionData, ...prev]);
-    }
-
-    resetCurrentSession();
+    setSessions((prev) => [newSession, ...prev]);
+    resetStartForm();
+    resetFinishForm();
+    setTimerNow(Date.now());
   };
+
+  const addRebuyToActive = (amountOverride?: number) => {
+    if (!activeSession) return;
+    const amount = Number(amountOverride ?? rebuyAmount);
+    if (!amount || amount <= 0) return;
+
+    setSessions((prev) =>
+      prev.map((session) => {
+        if (session.id !== activeSession.id) return session;
+        const rebuys = [...session.rebuys, amount];
+        const rebuyTotal = rebuys.reduce((sum, value) => sum + value, 0);
+        return {
+          ...session,
+          rebuys,
+          rebuyTotal,
+          buyIn: session.initialBuyIn + rebuyTotal,
+        };
+      })
+    );
+    setRebuyAmount("");
+  };
+
+  const removeRebuyFromActive = (index: number) => {
+    if (!activeSession) return;
+
+    setSessions((prev) =>
+      prev.map((session) => {
+        if (session.id !== activeSession.id) return session;
+        const rebuys = session.rebuys.filter((_, i) => i !== index);
+        const rebuyTotal = rebuys.reduce((sum, value) => sum + value, 0);
+        return {
+          ...session,
+          rebuys,
+          rebuyTotal,
+          buyIn: session.initialBuyIn + rebuyTotal,
+        };
+      })
+    );
+  };
+
+  const finishSession = () => {
+    if (!activeSession) return;
+    const cashOut = Number(finishForm.cashOut || 0);
+    const pocket = Number(finishForm.pocket || 0);
+    const endTime = toLocalInputValue();
+    const rebuyTotal = activeSession.rebuys.reduce((sum, value) => sum + value, 0);
+    const buyIn = activeSession.initialBuyIn + rebuyTotal;
+    const actual = cashOut + pocket - buyIn;
+    const perceived = cashOut - buyIn;
+    const hours = fmtHours(activeSession.startTime, endTime);
+
+    setSessions((prev) =>
+      prev.map((session) =>
+        session.id === activeSession.id
+          ? {
+              ...session,
+              status: "completed",
+              rebuyTotal,
+              buyIn,
+              cashOut,
+              pocket,
+              actual,
+              perceived,
+              endTime,
+              hours,
+            }
+          : session
+      )
+    );
+    resetFinishForm();
+  };
+
 
   const editSession = (session: Session) => {
     setEditingSessionId(session.id);
-    setForm({
+    setEditForm({
       location: session.location,
       game: session.game,
-      buyIn: String(session.initialBuyIn || ""),
+      initialBuyIn: String(session.initialBuyIn || ""),
       cashOut: String(session.cashOut || ""),
       pocket: String(session.pocket || ""),
       startTime: session.startTime,
       endTime: session.endTime,
       notes: session.notes,
     });
+    setEditRebuyAmount("");
+    setEditRebuys(session.rebuys || []);
     setManualHours(String(session.hours || ""));
-    setRebuyAmount("");
-    setRebuys(session.rebuys || []);
-    setIsRunning(false);
+    window.setTimeout(() => {
+      const el = document.getElementById("edit-session-panel");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
-  const removeSession = (id: string) => setSessions((prev) => prev.filter((s) => s.id !== id));
-  const clearAll = () => setSessions([]);
+  const updateEditedSession = () => {
+    if (!editingSessionId) return;
 
-  const startTimer = () => {
-    const now = new Date();
-    const localNow = toLocalInputValue(now);
-    setForm((prev) => ({ ...prev, startTime: localNow, endTime: localNow }));
-    setManualHours("");
-    setTimerNow(now.getTime());
-    setIsRunning(true);
+    setSessions((prev) =>
+      prev.map((session) => {
+        if (session.id !== editingSessionId) return session;
+
+        const startTime = editForm.startTime;
+        const endTime = session.status === "active" ? session.endTime : editForm.endTime;
+        const initialBuyIn = Number(editForm.initialBuyIn || 0);
+        const cashOut = Number(editForm.cashOut || 0);
+        const pocket = Number(editForm.pocket || 0);
+        const rebuys = [...editRebuys];
+        const rebuyTotal = rebuys.reduce((sum, value) => sum + value, 0);
+        const buyIn = initialBuyIn + rebuyTotal;
+        const hours =
+          manualHours !== "" && !Number.isNaN(Number(manualHours))
+            ? Number(manualHours)
+            : fmtHours(startTime, endTime);
+
+        return {
+          ...session,
+          rebuys,
+          location: editForm.location.trim(),
+          game: editForm.game.trim() || "Blackjack",
+          initialBuyIn,
+          cashOut,
+          pocket,
+          startTime,
+          endTime,
+          rebuyTotal,
+          buyIn,
+          actual: cashOut + pocket - buyIn,
+          perceived: cashOut - buyIn,
+          hours,
+          notes: editForm.notes.trim(),
+        };
+      })
+    );
+
+    resetEditForm();
   };
 
-  const stopTimer = () => {
-    const now = new Date();
-    setForm((prev) => ({ ...prev, endTime: toLocalInputValue(now) }));
-    setTimerNow(now.getTime());
-    setIsRunning(false);
+  const addEditRebuy = (amountOverride?: number) => {
+    const amount = Number(amountOverride ?? editRebuyAmount);
+    if (!amount || amount <= 0) return;
+    setEditRebuys((prev) => [...prev, amount]);
+    setEditRebuyAmount("");
   };
 
-  const endSessionNow = () => {
-    const now = new Date();
-    setForm((prev) => ({ ...prev, endTime: toLocalInputValue(now) }));
-    setTimerNow(now.getTime());
-    setIsRunning(false);
-    setManualHours("");
+  const removeEditRebuy = (index: number) => {
+    setEditRebuys((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const statCards = [
-    { title: "Bankroll", value: fmtCurrency(summary.bankroll), icon: Wallet },
-    { title: "Actual Win/Loss", value: fmtCurrency(summary.totalActual), icon: summary.totalActual >= 0 ? TrendingUp : TrendingDown },
-    { title: "Time at Table", value: `${summary.totalHours.toFixed(2)} hrs`, icon: Clock3 },
-    { title: "Hourly Rate", value: fmtCurrency(summary.hourly), icon: DollarSign },
-    { title: "Needs Pocket", value: String(summary.needsPocketCount), icon: Flag },
-  ];
+  const editRebuyTotal = useMemo(
+    () => editRebuys.reduce((sum, value) => sum + value, 0),
+    [editRebuys]
+  );
+
+  const editTotalBuyIn = useMemo(
+    () => Number(editForm.initialBuyIn || 0) + editRebuyTotal,
+    [editForm.initialBuyIn, editRebuyTotal]
+  );
+
+  const editActual = useMemo(() => {
+    const cashOut = Number(editForm.cashOut || 0);
+    const pocket = Number(editForm.pocket || 0);
+    return cashOut + pocket - editTotalBuyIn;
+  }, [editForm.cashOut, editForm.pocket, editTotalBuyIn]);
+
+  const removeSession = (id: string) => {
+    setSessions((prev) => prev.filter((session) => session.id !== id));
+    if (editingSessionId === id) {
+      resetEditForm();
+    }
+  };
+
+  const handleBuyInShortcutAdd = (amount: number) => {
+    setStartForm((p) => ({
+      ...p,
+      buyIn: String(Number(p.buyIn || 0) + amount),
+    }));
+  };
+
+  const handleBuyInShortcutReplace = (amount: number) => {
+    setStartForm((p) => ({
+      ...p,
+      buyIn: String(amount),
+    }));
+  };
+
+  const handleBuyInPointerDown = (amount: number) => {
+    if (!!activeSession) return;
+    longPressTriggered.current = false;
+    if (buyInHoldTimer.current) clearTimeout(buyInHoldTimer.current);
+    buyInHoldTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      handleBuyInShortcutReplace(amount);
+    }, 500);
+  };
+
+  const handleBuyInPointerUp = (amount: number) => {
+    if (!!activeSession) return;
+    if (buyInHoldTimer.current) {
+      clearTimeout(buyInHoldTimer.current);
+      buyInHoldTimer.current = null;
+    }
+    if (!longPressTriggered.current) {
+      handleBuyInShortcutAdd(amount);
+    }
+    longPressTriggered.current = false;
+  };
+
+  const handleBuyInPointerLeave = () => {
+    if (buyInHoldTimer.current) {
+      clearTimeout(buyInHoldTimer.current);
+      buyInHoldTimer.current = null;
+    }
+  };
+
+  const addToBankroll = (amountOverride?: number) => {
+    const amt = Number(amountOverride ?? bankrollAdd);
+    if (!amt || amt <= 0) return;
+    const current = Number(startingBankroll || 0);
+    const next = current + amt;
+    setStartingBankroll(String(next));
+    setBankrollAdd("");
+  };
+
+  const clearAll = () => {
+    setLastClearedData({
+      sessions: [...sessions],
+      startingBankroll,
+    });
+
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("blackjack-sessions");
+      localStorage.removeItem("starting-bankroll");
+    }
+
+    setSessions([]);
+    setStartingBankroll("");
+    setBankrollAdd("");
+    setConfirmClearAll(false);
+    resetStartForm();
+    resetFinishForm();
+    resetEditForm();
+  };
+
+  const restoreLastCleared = () => {
+    if (!lastClearedData) return;
+
+    setSessions(lastClearedData.sessions);
+    setStartingBankroll(lastClearedData.startingBankroll);
+    setBankrollAdd("");
+    setConfirmClearAll(false);
+    setLastClearedData(null);
+    resetStartForm();
+    resetFinishForm();
+    resetEditForm();
+  };
 
   return (
-    <div className="app-shell">
-      <div className="container">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-          <div className="title-row">
-            <div>
-              <h1 className="title">Blackjack Session Tracker TESTING</h1>
-              <p className="subtitle">
-                Track buy-ins, rebuys, cash-out, money left in your pocket, actual result, bankroll, and time at the table.
-              </p>
+    <div className="min-h-screen bg-slate-100 text-slate-900">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight leading-tight">Session Edge</h1>
+              <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
+                V2
+              </span>
             </div>
-            <button type="button" className={`btn ${quickEntry ? "btn-primary" : "btn-outline"}`} onClick={() => setQuickEntry((prev) => !prev)}>
-              <Zap className="btn-icon" />
-              {quickEntry ? "Quick Entry On" : "Quick Entry Off"}
+            <p className="mt-1 text-sm text-slate-500 max-w-xl">
+              Track your real edge — not just your results.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => downloadCSV(completedSessions)}
+              disabled={completedSessions.length === 0}
+              className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
             </button>
           </div>
         </motion.div>
 
-        <div className="card">
-          <div className="bankroll-grid">
-            <Field label="Starting Bankroll" htmlFor="startingBankroll">
-              <input id="startingBankroll" className="input" type="number" inputMode="decimal" value={startingBankroll} onChange={(e) => setStartingBankroll(e.target.value)} placeholder="0" />
-            </Field>
-            <div className="helper">Current bankroll = starting bankroll + total actual win/loss.</div>
-          </div>
-        </div>
-
-        <div className="stats-grid">
-          {statCards.map((card, i) => (
-            <motion.div key={card.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.05 }}>
-              <StatCard title={card.title} value={card.value} icon={card.icon} />
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="main-grid">
-          <div className="card">
-            <div className="card-header">{editingSessionId ? "Edit Session" : quickEntry ? "Quick Entry" : "Add Session"}</div>
-            <div className="stack">
-              {!quickEntry && (
-                <div className="grid-2">
-                  <Field label="Casino / Location" htmlFor="location">
-                    <input id="location" className="input" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Example: Hard Rock Tampa" />
-                  </Field>
-                  <Field label="Game" htmlFor="game">
-                    <input id="game" className="input" value={form.game} onChange={(e) => setForm({ ...form, game: e.target.value })} placeholder="Blackjack" />
-                  </Field>
+        {openSessionWarning && (
+          <div className="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-800">Active Session in Progress</div>
+                <div className="text-sm text-amber-900">
+                  You have an open session in progress{openSessionWarning.location ? ` at ${openSessionWarning.location}` : ""}. Finish it in Step 2 or edit it below.
                 </div>
-              )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("finish-session-panel");
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="inline-flex h-10 items-center gap-2 rounded-2xl bg-amber-100 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-200"
+              >
+                Go to Open Session
+              </button>
+            </div>
+          </div>
+        )}
 
-              <div className={quickEntry ? "grid-2" : "grid-3"}>
-                <Field label="Initial Buy-In" htmlFor="buyIn">
-                  <input id="buyIn" className="input" type="number" inputMode="decimal" value={form.buyIn} onChange={(e) => setForm({ ...form, buyIn: e.target.value })} placeholder="1000" />
-                </Field>
-                <Field label="Cash-Out" htmlFor="cashOut">
-                  <input id="cashOut" className="input" type="number" inputMode="decimal" value={form.cashOut} onChange={(e) => setForm({ ...form, cashOut: e.target.value })} placeholder="200" />
-                </Field>
-                {!quickEntry && (
-                  <Field label="In Pocket" htmlFor="pocket">
-                    <input id="pocket" className="input" type="number" inputMode="decimal" value={form.pocket} onChange={(e) => setForm({ ...form, pocket: e.target.value })} placeholder="1200" />
-                  </Field>
-                )}
+        <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <SmallStat icon={Wallet} label="Bankroll" value={fmtCurrency(summary.bankroll)} />
+          <SmallStat
+            icon={summary.totalActual >= 0 ? TrendingUp : TrendingDown}
+            label="Win/Loss"
+            value={fmtCurrency(summary.totalActual)}
+            tone={summary.totalActual >= 0 ? "positive" : "negative"}
+          />
+          <SmallStat icon={Clock3} label="Hours" value={`${summary.totalHours.toFixed(2)} hrs`} />
+          <SmallStat
+            icon={TrendingUp}
+            label="Hourly"
+            value={fmtCurrency(summary.hourly)}
+            tone={summary.hourly >= 0 ? "positive" : "negative"}
+          />
+          
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
+          <div className="space-y-5">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+              <div className="mb-4">
+                <div className="text-lg font-semibold">Step 1 · Start Session</div>
+                <div className="text-sm text-slate-500">Enter what you know now and start the timer.</div>
               </div>
 
-              <div className="subcard">
-                <div className="stack">
-                  <div className="rebuy-row">
-                    <Field label="Rebuy Amount" htmlFor="rebuyAmount">
-                      <input id="rebuyAmount" className="input" type="number" inputMode="decimal" value={rebuyAmount} onChange={(e) => setRebuyAmount(e.target.value)} placeholder="500" />
-                    </Field>
-                    <div className="button-wrap">
-                      <button type="button" className="btn btn-primary" onClick={() => addRebuy()}><PlusCircle className="btn-icon" />Add Rebuy</button>
-                      <button type="button" className="btn btn-outline" onClick={() => addRebuy(100)}>+100</button>
-                      <button type="button" className="btn btn-outline" onClick={() => addRebuy(500)}>+500</button>
-                      <button type="button" className="btn btn-outline" onClick={() => addRebuy(1000)}>+1000</button>
+              <div className="space-y-4">
+                <Field label="Starting Bankroll">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={startingBankroll}
+                    onChange={(e) => setStartingBankroll(e.target.value)}
+                    placeholder="0"
+                    className="h-12 text-base"
+                  />
+                </Field>
+
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Add to Bankroll</div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={bankrollAdd}
+                      onChange={(e) => setBankrollAdd(e.target.value)}
+                      placeholder="Amount to add"
+                      className="h-12 text-base"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addToBankroll()}
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-4 text-sm font-semibold text-white"
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      Add
+                    </button>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {[100, 500, 1000].map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => addToBankroll(amount)}
+                        className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                      >
+                        +{amount}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Field label="Casino / Location">
+                    <Input
+                      value={startForm.location}
+                      onChange={(e) => setStartForm((prev) => ({ ...prev, location: e.target.value }))}
+                      placeholder="Example: Hard Rock Tampa"
+                      className="h-12 text-base"
+                      disabled={!!activeSession}
+                    />
+                  </Field>
+                  <Field label="Session Type">
+                    <Input
+                      value={startForm.game}
+                      onChange={(e) => setStartForm((prev) => ({ ...prev, game: e.target.value }))}
+                      placeholder="Blackjack / Slots / Poker"
+                      className="h-12 text-base"
+                      disabled={!!activeSession}
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Initial Buy-In">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    value={startForm.buyIn}
+                    onChange={(e) => setStartForm((prev) => ({ ...prev, buyIn: e.target.value }))}
+                    placeholder="1000"
+                    className="h-16 text-2xl font-semibold"
+                    disabled={!!activeSession}
+                  />
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(() => {
+                      const recent = [
+                        ...new Set([
+                          Number(lastBuyIn || 0),
+                          ...sessions.map((s) => s.initialBuyIn).filter((n) => !!n),
+                        ]),
+                      ].filter((n) => n > 0);
+                      const defaults = [100, 200, 500, 1000];
+                      const combined = [...recent, ...defaults];
+                      const unique = Array.from(new Set(combined));
+                      const sorted = unique.sort((a, b) => a - b);
+                      const top = sorted.slice(0, 4);
+
+                      return top.map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          onPointerDown={() => handleBuyInPointerDown(amount)}
+                          onPointerUp={() => handleBuyInPointerUp(amount)}
+                          onPointerLeave={handleBuyInPointerLeave}
+                          onContextMenu={(e) => e.preventDefault()}
+                          disabled={!!activeSession}
+                          className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          {fmtCurrency(amount)}
+                        </button>
+                      ));
+                    })()}
+                  </div>
+                </Field>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={startSession}
+                    disabled={!!activeSession || !startForm.buyIn}
+                    className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                  >
+                    <Play className="h-4 w-4" />
+                    Start Session
+                  </button>
+                  {lastBuyIn && !activeSession && (
+                    <button
+                      type="button"
+                      onClick={() => setStartForm((p)=>({...p,buyIn:lastBuyIn}))}
+                      className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+                    >
+                      Same Buy-In ({fmtCurrency(lastBuyIn)})
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={resetStartForm}
+                    disabled={!!activeSession}
+                    className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Clear Form
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+              <div className="mb-4">
+                <div className="text-lg font-semibold">Step 2 · Finish Session</div>
+                <div className="text-sm text-slate-500">
+                  {activeSession ? "Add rebuys, enter cash-out, then finish the session." : "Start a session first to unlock this step."}
+                </div>
+              </div>
+
+              {!activeSession ? (
+                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-center text-slate-500">
+                  No active session right now.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-sm ring-1 ring-slate-800">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Active Session</div>
+                        <div className="text-xl font-bold">{activeSession?.location || "—"}</div>
+                        <div className="text-sm text-slate-300">{activeSession.game}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-300">Live Timer</div>
+                        <div className="text-2xl font-bold tracking-wide">{activeElapsed}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Initial</div>
+                        <div className="text-lg font-semibold">{fmtCurrency(activeSession.initialBuyIn)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Rebuys</div>
+                        <div className="text-lg font-semibold">{fmtCurrency(finishRebuyTotal)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Total Buy-In</div>
+                        <div className="text-lg font-semibold">{fmtCurrency(finishTotalBuyIn)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Hours</div>
+                        <div className="text-lg font-semibold">{activeHours.toFixed(2)}</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="helper inline-helper">
-                    <span><strong>Rebuy Total:</strong> {fmtCurrency(rebuyTotal)}</span>
-                    <span className="dot">•</span>
-                    <span><strong>Total Buy-In:</strong> {fmtCurrency(totalBuyIn)}</span>
-                  </div>
-                  {rebuys.length > 0 && (
-                    <div className="chip-wrap">
-                      {rebuys.map((amount, index) => (
-                        <button key={`${amount}-${index}`} type="button" className="chip" onClick={() => removeRebuy(index)}>
-                          {fmtCurrency(amount)} ×
+
+                  <div className="rounded-3xl bg-slate-50 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-700">Rebuys</div>
+                        <div className="text-xs text-slate-500">Add money to the session as it happens.</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={rebuyAmount}
+                        onChange={(e) => setRebuyAmount(e.target.value)}
+                        placeholder="Rebuy amount"
+                        className="h-12 text-base"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addRebuyToActive()}
+                        className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-semibold text-white"
+                      >
+                        <PlusCircle className="h-4 w-4" />
+                        Add Rebuy
+                      </button>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {[100, 500, 1000].map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          onClick={() => addRebuyToActive(amount)}
+                          className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                        >
+                          +{amount}
                         </button>
                       ))}
                     </div>
-                  )}
+
+                    {activeSession.rebuys.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {activeSession.rebuys.map((amount, index) => (
+                          <button
+                            key={`${amount}-${index}`}
+                            type="button"
+                            onClick={() => removeRebuyFromActive(index)}
+                            className="rounded-full bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white"
+                          >
+                            {fmtCurrency(amount)} ×
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label="Cash-Out">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={finishForm.cashOut}
+                        onChange={(e) => setFinishForm((prev) => ({ ...prev, cashOut: e.target.value }))}
+                        placeholder="200"
+                        className="h-16 text-2xl font-semibold"
+                      />
+                    </Field>
+                    <Field label="REMOVED">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={finishForm.pocket}
+                        onChange={(e) => setFinishForm((prev) => ({ ...prev, pocket: e.target.value }))}
+                        placeholder="0"
+                        className="h-16 text-2xl font-semibold"
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-sm ring-1 ring-slate-800">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Projected Win/Loss</div>
+                    <div className={`text-4xl font-bold tracking-tight ${finishActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      {fmtCurrency(finishActual)}
+                    </div>
+                    <div className="mt-2 text-sm text-slate-300">Cash-Out + REMOVED - Total Buy-In</div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={finishSession}
+                      className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm"
+                    >
+                      <Square className="h-4 w-4" />
+                      Finish Session
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetFinishForm}
+                      className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset Finish
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              {!quickEntry && (
-                <>
-                  <div className="grid-2">
-                    <Field label="Start Time" htmlFor="startTime">
-                      <input id="startTime" className="input" type="datetime-local" value={form.startTime} onChange={(e) => { setForm({ ...form, startTime: e.target.value }); setManualHours(""); }} />
-                    </Field>
-                    <Field label="End Time" htmlFor="endTime">
-                      <input id="endTime" className="input" type="datetime-local" value={form.endTime} onChange={(e) => { setForm({ ...form, endTime: e.target.value }); setManualHours(""); }} />
-                    </Field>
-                  </div>
-
-                  <div className="subcard timer-row">
-                    <div>
-                      <div className="stat-title">Live Timer</div>
-                      <div className="timer-value">{liveElapsed}</div>
-                    </div>
-                    <div className="button-wrap">
-                      <button type="button" className={`btn ${isRunning ? "btn-secondary" : "btn-primary"}`} onClick={startTimer} disabled={isRunning}>Start</button>
-                      <button type="button" className="btn btn-outline" onClick={stopTimer} disabled={!isRunning}>Stop</button>
-                      <button type="button" className="btn btn-outline" onClick={endSessionNow}><Square className="btn-icon" />End Session</button>
-                    </div>
-                  </div>
-                </>
               )}
+            </motion.div>
 
-              <div className={quickEntry ? "grid-2" : "grid-3"}>
-                <div className="subcard">
-                  <div className="stat-title">Actual Win/Loss</div>
-                  <div className="stat-value medium">{fmtCurrency(actual)}</div>
-                  <div className="helper">{quickEntry ? "Quick entry saves now and uses last session end as the next start time." : "Cash-Out + In Pocket - Total Buy-In"}</div>
+            <motion.div id="edit-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-lg font-semibold">Step 3 · Edit Session</div>
+                  <div className="text-sm text-slate-500">Use this only when you need to clean up or adjust a saved session.</div>
                 </div>
-                <div className="subcard">
-                  <div className="stat-title">Hours</div>
-                  <div className="stat-value medium">{hours.toFixed(2)}</div>
-                  <div className="helper">Live timer: {liveElapsed}</div>
-                </div>
-                {!quickEntry && (
-                  <div className="subcard">
-                    <div className="stat-title">Override Hours</div>
-                    <input className="input" type="number" inputMode="decimal" step="0.01" value={manualHours} onChange={(e) => setManualHours(e.target.value)} placeholder="Optional" />
-                    <div className="helper">Leave blank to use start and end time.</div>
-                  </div>
+                {editingSessionId && (
+                  <button
+                    type="button"
+                    onClick={resetEditForm}
+                    className="rounded-2xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    Cancel Edit
+                  </button>
                 )}
               </div>
 
-              {!quickEntry && (
-                <Field label="Notes" htmlFor="notes">
-                  <input id="notes" className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional: table conditions, mistakes, fatigue, heat check, dealer changes" />
-                </Field>
-              )}
+              {!editingSessionId ? (
+                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-center text-slate-500">
+                  Choose a session from the table to edit it.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label="Casino / Location">
+                      <Input
+                        value={editForm.location}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, location: e.target.value }))}
+                        placeholder="Example: Hard Rock Tampa"
+                        className="h-12 text-base"
+                      />
+                    </Field>
+                    <Field label="Session Type">
+                      <Input
+                        value={editForm.game}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, game: e.target.value }))}
+                        placeholder="Blackjack / Slots / Poker"
+                        className="h-12 text-base"
+                      />
+                    </Field>
+                  </div>
 
-              <div className="button-wrap">
-                <button type="button" className="btn btn-primary" onClick={saveSession}><PlusCircle className="btn-icon" />{editingSessionId ? "Update Session" : "Save Session"}</button>
-                <button type="button" className="btn btn-outline" onClick={resetCurrentSession}><RotateCcw className="btn-icon" />Reset Current</button>
-                <button type="button" className="btn btn-outline" onClick={() => downloadCSV(sessions)} disabled={sessions.length === 0}><Download className="btn-icon" />Export CSV</button>
-                <button type="button" className="btn btn-outline" onClick={clearAll} disabled={sessions.length === 0}>Clear All</button>
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <Field label="Initial Buy-In">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={editForm.initialBuyIn}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, initialBuyIn: e.target.value }))}
+                        placeholder="1000"
+                        className="h-12 text-base"
+                      />
+                    </Field>
+                    <Field label="Cash-Out">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={editForm.cashOut}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, cashOut: e.target.value }))}
+                        placeholder="0"
+                        className="h-12 text-base"
+                      />
+                    </Field>
+                    <Field label="REMOVED">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={editForm.pocket}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, pocket: e.target.value }))}
+                        placeholder="0"
+                        className="h-12 text-base"
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="rounded-3xl bg-slate-50 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-700">Edit Rebuys</div>
+                        <div className="text-xs text-slate-500">Add or remove rebuys for this saved session.</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Rebuy Total</div>
+                        <div className="text-lg font-bold">{fmtCurrency(editRebuyTotal)}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={editRebuyAmount}
+                        onChange={(e) => setEditRebuyAmount(e.target.value)}
+                        placeholder="Rebuy amount"
+                        className="h-12 text-base"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addEditRebuy()}
+                        className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-semibold text-white"
+                      >
+                        <PlusCircle className="h-4 w-4" />
+                        Add Rebuy
+                      </button>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {[100, 500, 1000].map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          onClick={() => addEditRebuy(amount)}
+                          className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                        >
+                          +{amount}
+                        </button>
+                      ))}
+                    </div>
+
+                    {editRebuys.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {editRebuys.map((amount, index) => (
+                          <button
+                            key={`${amount}-${index}`}
+                            type="button"
+                            onClick={() => removeEditRebuy(index)}
+                            className="rounded-full bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white"
+                          >
+                            {fmtCurrency(amount)} ×
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-sm ring-1 ring-slate-800">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Updated Win/Loss</div>
+                    <div className={`text-4xl font-bold tracking-tight ${editActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      {fmtCurrency(editActual)}
+                    </div>
+                    <div className="mt-2 text-sm text-slate-300">Based on edited buy-in, rebuys, cash-out, and pocket.</div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label="Start Time">
+                      <Input
+                        type="datetime-local"
+                        value={editForm.startTime}
+                        onChange={(e) => {
+                          setEditForm((prev) => ({ ...prev, startTime: e.target.value }));
+                          setManualHours("");
+                        }}
+                        className="h-12 text-base"
+                      />
+                    </Field>
+                    <Field label="End Time">
+                      <Input
+                        type="datetime-local"
+                        value={editForm.endTime}
+                        onChange={(e) => {
+                          setEditForm((prev) => ({ ...prev, endTime: e.target.value }));
+                          setManualHours("");
+                        }}
+                        className="h-12 text-base"
+                      />
+                    </Field>
+                  </div>
+
+                  <Field label="Override Hours">
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      value={manualHours}
+                      onChange={(e) => setManualHours(e.target.value)}
+                      placeholder="Optional"
+                      className="h-12 text-base"
+                    />
+                  </Field>
+
+                  <Field label="Notes">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {["Good run","Tired","Drinks","Mistakes"].map(tag=> (
+                        <button key={tag} type="button" onClick={()=> setEditForm(p=>({...p,notes: p.notes ? p.notes+", "+tag : tag}))} className="px-3 py-1 rounded-full bg-slate-200 text-xs font-semibold">
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                    <Input
+                      value={editForm.notes}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Optional notes"
+                      className="h-12 text-base"
+                    />
+                  </Field>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={updateEditedSession}
+                      className="inline-flex h-12 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Update Session
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetEditForm}
+                      className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset Edit
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
           </div>
 
-          <div className="card">
-            <div className="card-header">Saved Sessions</div>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+              <div>
+                <div className="text-lg font-semibold">Sessions</div>
+                <div className="text-sm text-slate-500">One active session at a time. Finished sessions stay below.</div>
+                {lastClearedData && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-amber-700">Last clear is available to restore.</span>
+                    <button
+                      type="button"
+                      onClick={restoreLastCleared}
+                      className="inline-flex h-9 items-center gap-2 rounded-2xl bg-amber-100 px-3 text-sm font-semibold text-amber-800"
+                    >
+                      Restore Last Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+              {confirmClearAll ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    className="inline-flex h-10 items-center gap-2 rounded-2xl bg-red-600 px-4 text-sm font-semibold text-white"
+                  >
+                    Confirm Delete All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClearAll(false)}
+                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearAll(true)}
+                  disabled={sessions.length === 0}
+                  className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+
             {sessions.length === 0 ? (
-              <div className="empty-state">No sessions yet. Add your first blackjack session on the left.</div>
+              <div className="px-5 py-12 text-center text-slate-500">No sessions yet. Start your first session on the left → Enter bankroll, buy-in, then press Start Session.</div>
             ) : (
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm border-separate border-spacing-y-1">
+                  <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.16em] text-slate-500">
                     <tr>
-                      <th>Date</th>
-                      <th>Location</th>
-                      <th>Total Buy-In</th>
-                      <th>Cash-Out</th>
-                      <th>In Pocket</th>
-                      <th>Flag</th>
-                      <th>Actual</th>
-                      <th>Perceived</th>
-                      <th>Running Perceived</th>
-                      <th>Hours</th>
-                      <th></th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold">Date</th>
+                      <th className="px-4 py-3 font-semibold">Session</th>
+                      <th className="px-4 py-3 font-semibold">Buy-In</th>
+                      <th className="px-4 py-3 font-semibold">Cash-Out</th>
+                      <th className="px-4 py-3 font-semibold">REMOVED</th>
+                      <th className="px-4 py-3 font-semibold">Win/Loss</th>
+                      <th className="px-4 py-3 font-semibold">Total Win/Loss</th>
+                      <th className="px-4 py-3 font-semibold">Running Total</th>
+                      <th className="px-4 py-3 font-semibold">Hours</th>
+                      <th className="px-4 py-3 font-semibold"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {sessionsWithRunningTotals.map((s: Session & { runningPerceived: number }) => (
-                      <tr key={s.id}>
-                        <td>{s.startTime ? new Date(s.startTime).toLocaleDateString() : ""}</td>
-                        <td>
-                          <div className="cell-title">{s.location || "—"}</div>
-                          <div className="cell-subtitle">{s.game}</div>
-                          {s.rebuyTotal > 0 && <div className="cell-subtitle">Rebuys: {fmtCurrency(s.rebuyTotal)}</div>}
-                        </td>
-                        <td>{fmtCurrency(s.buyIn)}</td>
-                        <td>{fmtCurrency(s.cashOut)}</td>
-                        <td>{fmtCurrency(s.pocket)}</td>
-                        <td>
-                          {s.pocket === 0 ? <span className="pill">Needs Pocket</span> : <span className="muted">—</span>}
-                        </td>
-                        <td className={s.actual >= 0 ? "positive" : "negative"}>{fmtCurrency(s.actual)}</td>
-                        <td>{fmtCurrency(s.perceived)}</td>
-                        <td className={s.runningPerceived >= 0 ? "positive" : "negative"}>{fmtCurrency(s.runningPerceived)}</td>
-                        <td>{s.hours.toFixed(2)}</td>
-                        <td>
-                          <div className="action-buttons">
-                            <button type="button" className="icon-button" onClick={() => editSession(s)} aria-label="Edit session"><Pencil className="icon" /></button>
-                            <button type="button" className="icon-button" onClick={() => removeSession(s.id)} aria-label="Delete session"><Trash2 className="icon" /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {sessions.map((session) => {
+                      const completedMatch = sessionsWithRunningTotals.find((row) => row.id === session.id);
+                      const runningPerceived = completedMatch?.runningPerceived ?? 0;
+
+                      return (
+                        <tr key={session.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition align-top">
+                          <td className="px-4 py-3">
+                            {session.status === "active" ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const el = document.getElementById("finish-session-panel");
+                                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }}
+                                className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800 hover:bg-blue-200"
+                              >
+                                Active
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => editSession(session)}
+                                className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-200"
+                              >
+                                Completed
+                              </button>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {session.startTime ? new Date(session.startTime).toLocaleDateString() : ""}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-slate-900">{session.location || "—"}</div>
+                            <div className="text-slate-500">{session.game}</div>
+                            {session.rebuyTotal > 0 && <div className="text-slate-500">Rebuys: {fmtCurrency(session.rebuyTotal)}</div>}
+                            {session.notes && <div className="mt-1 max-w-xs truncate text-xs text-slate-500" title={session.notes}>Notes: {session.notes}</div>}
+                            
+                          </td>
+                          <td className="px-4 py-3 font-medium">{fmtCurrency(session.buyIn)}</td>
+                          <td className="px-4 py-3">
+                            {session.status === "completed" ? (
+                              <input
+                                type="number"
+                                value={session.cashOut}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value || 0);
+                                  setSessions((prev) =>
+                                    prev.map((s) =>
+                                      s.id === session.id
+                                        ? { ...s, cashOut: val, actual: val + s.pocket - s.buyIn, perceived: val - s.buyIn }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="w-24 rounded-lg border px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-200"
+                              />
+                            ) : "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {session.status === "completed" ? (
+                              <input
+                                type="number"
+                                value={session.pocket}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value || 0);
+                                  setSessions((prev) =>
+                                    prev.map((s) =>
+                                      s.id === session.id
+                                        ? { ...s, pocket: val, actual: s.cashOut + val - s.buyIn, perceived: s.cashOut - s.buyIn }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="w-24 rounded-lg border px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-200"
+                              />
+                            ) : "—"}
+                          </td>
+                          <td className={`px-4 py-3 font-semibold ${session.actual >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {session.status === "completed" ? fmtCurrency(session.actual) : "—"}
+                          </td>
+                          <td className="px-4 py-3">{session.status === "completed" ? fmtCurrency(session.perceived) : "—"}</td>
+                          <td className={`px-4 py-3 font-semibold ${runningPerceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {session.status === "completed" ? fmtCurrency(runningPerceived) : "—"}
+                          </td>
+                          <td className="px-4 py-3">{session.status === "completed" ? session.hours.toFixed(2) : activeSession?.id === session.id ? activeHours.toFixed(2) : "—"}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => editSession(session)}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                                aria-label="Edit session"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeSession(session.id)}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                                aria-label="Delete session"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
