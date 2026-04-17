@@ -234,6 +234,8 @@ function SmallStat({
   );
 }
 
+// 🔒 HARD SAVED VERSION 2.1 - STABLE RELEASE
+// Do not modify core logic without version bump
 export default function App() {
   const [globalSettings, setGlobalSettings] = useState({
     location: "",
@@ -935,7 +937,7 @@ export default function App() {
                 value={startingBankroll}
                 onChange={(e) => setStartingBankroll(e.target.value)}
                 placeholder="e.g. 500"
-                className="h-10 w-24 sm:w-28 text-base font-semibold text-right flex-shrink-0"
+                className="h-10 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
               />
 
               {[100,200,500,1000].map((amount) => (
@@ -1015,7 +1017,7 @@ export default function App() {
                       value={startForm.buyIn}
                       onChange={(e) => setStartForm((prev) => ({ ...prev, buyIn: e.target.value }))}
                       placeholder="e.g. 500"
-                      className="h-10 w-24 sm:w-28 text-base font-semibold text-right flex-shrink-0"
+                      className="h-10 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
                       disabled={!!activeSession}
                     />
 
