@@ -15,6 +15,16 @@ import { AnimatePresence, motion } from "framer-motion";
 
 type SessionStatus = "active" | "completed";
 
+function safeJsonParse<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    console.error("Failed to parse saved Session Edge data:", error);
+    return fallback;
+  }
+}
+
 type Session = {
   tripId?: string; // NEW: allows grouping sessions into trips
   freeplayUsed?: boolean;
@@ -228,7 +238,7 @@ function SmallStat({
   );
 }
 
-// 🔒 HARD SAVED VERSION 2.4 - STABLE RELEASE
+// 🔒 HARD SAVED VERSION 2.4 - FINAL STABLE CHECKPOINT
 // Do not modify core logic without version bump
 export default function App() {
   // 🔹 NEW: Trip tracking
@@ -238,16 +248,9 @@ export default function App() {
     const savedTrip = window.localStorage.getItem("session-edge-trip-name");
     if (savedTrip) return savedTrip;
 
-    const savedSessionsRaw = window.localStorage.getItem("blackjack-sessions");
-    if (savedSessionsRaw) {
-      try {
-        const parsed = JSON.parse(savedSessionsRaw) as Session[];
-        const firstTrip = parsed.find((s) => s.tripId)?.tripId;
-        if (firstTrip) return firstTrip;
-      } catch (error) {
-        console.error("Trip restore error:", error);
-      }
-    }
+    const savedSessionsRaw = safeJsonParse<Session[]>(window.localStorage.getItem("blackjack-sessions"), []);
+    const firstTrip = savedSessionsRaw.find((s) => s.tripId)?.tripId;
+    if (firstTrip) return firstTrip;
 
     return "Default Trip";
   });
@@ -255,8 +258,7 @@ export default function App() {
   // 🔹 Per-location session type
   const [locationGames, setLocationGames] = useState<Record<string,string>>(() => {
     if (typeof window === "undefined") return {};
-    const saved = window.localStorage.getItem("location-games");
-    return saved ? JSON.parse(saved) : {};
+    return safeJsonParse<Record<string, string>>(window.localStorage.getItem("location-games"), {});
   });
 
   const [globalSettings, setGlobalSettings] = useState({
@@ -292,8 +294,7 @@ export default function App() {
 
   const [sessions, setSessions] = useState<Session[]>(() => {
     if (typeof window === "undefined") return [];
-    const saved = window.localStorage.getItem("blackjack-sessions");
-    return saved ? JSON.parse(saved) : [];
+    return safeJsonParse<Session[]>(window.localStorage.getItem("blackjack-sessions"), []);
   });
   const [timerNow, setTimerNow] = useState(Date.now());
   
@@ -303,8 +304,7 @@ export default function App() {
   // 🔹 Per-trip bankroll storage
   const [tripBankrolls, setTripBankrolls] = useState<Record<string, string>>(() => {
     if (typeof window === "undefined") return {};
-    const saved = window.localStorage.getItem("trip-bankrolls");
-    return saved ? JSON.parse(saved) : {};
+    return safeJsonParse<Record<string, string>>(window.localStorage.getItem("trip-bankrolls"), {});
   });
 
   const startingBankroll = tripBankrolls[tripName] || "";
@@ -585,7 +585,8 @@ export default function App() {
     if (!activeSession) return;
     const cashOut = Number(finishForm.cashOut || 0);
     const pocket = Number(finishForm.pocket || 0);
-    const pointTotal = finishForm.pointTotal === "" ? undefined : Number(finishForm.pointTotal);
+    let pointTotal = finishForm.pointTotal === "" ? undefined : Number(finishForm.pointTotal);
+    if (pointTotal === 0) pointTotal = previousPointTotal;
     const endTime = toLocalInputValue(new Date(), true);
     const buyIn = activeSession.initialBuyIn;
     const actual = cashOut + pocket - buyIn;
@@ -653,7 +654,8 @@ export default function App() {
         const buyIn = editForm.freeplayUsed ? 0 : Number(editForm.initialBuyIn || 0);
         const cashOut = Number(editForm.cashOut || 0);
         const pocket = Number(editForm.pocket || 0);
-        const pointTotal = editForm.pointTotal === "" ? undefined : Number(editForm.pointTotal);
+        let pointTotal = editForm.pointTotal === "" ? undefined : Number(editForm.pointTotal);
+        if (pointTotal === 0) pointTotal = editingPreviousPointTotal;
         const initialBuyIn = buyIn;
         const pointsEarned = pointTotal === undefined ? undefined : pointTotal - editingPreviousPointTotal;
         const hours =
@@ -967,14 +969,13 @@ export default function App() {
 
         <div className="mb-6 grid gap-4 sm:gap-5 lg:grid-cols-[1.4fr_1fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-sm font-semibold text-slate-900">Casino / Location</div>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="text-base font-semibold text-slate-900">Casino / Location</div>
               <div className="text-xs text-slate-400">Active</div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Casino / Location</div>
                 <Input
                   value={tripName}
                   onChange={(e) => {
@@ -983,7 +984,7 @@ export default function App() {
                     else setTripName(val);
                   }}
                   placeholder="Hard Rock Tampa / Vegas / Cruise"
-                  className="h-10 text-sm"
+                  className="h-10 text-sm mt-0.5"
                 />
               </div>
 
@@ -1097,7 +1098,7 @@ export default function App() {
                   value={startingBankroll}
                   onChange={(e) => setStartingBankroll(e.target.value)}
                   placeholder="e.g. 500"
-                  className="h-10 w-20 sm:w-24 text-base font-semibold text-center flex-shrink-0"
+                  className="h-10 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
                 />
 
                 {[100, 200, 500, 1000].map((amt) => (
@@ -1140,8 +1141,8 @@ export default function App() {
           </div>
         )}
 
-        <div className="grid gap-4 lg:gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
-          <div className="space-y-4 lg:space-y-5">
+        <div className="grid gap-4 lg:gap-5 xl:grid-cols-1">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-4">
                 <div className="text-base font-semibold">Step 1 · Start Session</div>
@@ -1149,8 +1150,6 @@ export default function App() {
               </div>
 
               <div className="space-y-4">
-                
-
                 <Field label="Buy-In">
                   <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                     <Input
@@ -1159,7 +1158,7 @@ export default function App() {
                       value={startForm.buyIn}
                       onChange={(e) => setStartForm((prev) => ({ ...prev, buyIn: e.target.value }))}
                       placeholder="e.g. 500"
-                      className="h-10 w-20 sm:w-24 text-base font-semibold text-center flex-shrink-0"
+                      className="h-10 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
                       disabled={!!activeSession}
                     />
 
@@ -1209,7 +1208,7 @@ export default function App() {
                   {lastBuyIn && !activeSession && (
                     <button
                       type="button"
-                      onClick={() => setStartForm((p)=>({...p,buyIn:lastBuyIn}))}
+                      onClick={() => setStartForm((p) => ({ ...p, buyIn: lastBuyIn }))}
                       className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
                     >
                       Same Buy-In ({fmtCurrency(lastBuyIn)})
@@ -1237,12 +1236,9 @@ export default function App() {
               </div>
 
               {!activeSession ? (
-                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-center text-slate-500">
-                  No active session right now.
-                </div>
+                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-left text-slate-500">No active session right now.</div>
               ) : (
                 <div className="space-y-4">
-
                   <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-md ring-1 ring-slate-800">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
@@ -1250,7 +1246,7 @@ export default function App() {
                         <div className="text-xl font-bold">{activeSession?.location || "—"}</div>
                         <div className="text-sm text-slate-300">{activeSession.game}</div>
                       </div>
-                      <div className="text-center">
+                      <div className="text-left">
                         <div className="text-xs uppercase tracking-[0.16em] text-slate-300">Live Timer</div>
                         <div className="text-2xl font-bold tracking-wide">{activeElapsed}</div>
                       </div>
@@ -1285,7 +1281,7 @@ export default function App() {
                           value={finishForm.cashOut}
                           onChange={(e) => setFinishForm((p) => ({ ...p, cashOut: e.target.value }))}
                           placeholder="0"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-center flex-shrink-0"
+                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1296,7 +1292,7 @@ export default function App() {
                           value={finishForm.pocket}
                           onChange={(e) => setFinishForm((p) => ({ ...p, pocket: e.target.value }))}
                           placeholder="0"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-center flex-shrink-0"
+                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1307,13 +1303,12 @@ export default function App() {
                           value={finishForm.pointTotal}
                           onChange={(e) => setFinishForm((p) => ({ ...p, pointTotal: e.target.value }))}
                           placeholder={String(previousPointTotal)}
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-center flex-shrink-0"
+                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
                     </div>
 
                     <div className="mt-2 text-xs text-slate-500">Based on previous total: {previousPointTotal}</div>
-                    
                   </div>
 
                   <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-md ring-1 ring-slate-800">
@@ -1333,32 +1328,30 @@ export default function App() {
                     </div>
 
                     <div className="flex flex-wrap gap-2 sm:gap-2">
-                    <motion.button
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ duration: 0.12 }}
-                      type="button"
-                      onClick={finishSession}
-                      className="inline-flex h-11 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
-                    >
-                      <Square className="h-4 w-4" />
-                      Finish Session
-                    </motion.button>
-                    <button
-                      type="button"
-                      onClick={resetFinishForm}
-                      className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      Reset Finish
-                    </button>
-                  </div>
-                  <div className="mt-2 text-xs text-slate-500">Saves and closes session.</div>
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ duration: 0.12 }}
+                        type="button"
+                        onClick={finishSession}
+                        className="inline-flex h-11 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                      >
+                        <Square className="h-4 w-4" />
+                        Finish Session
+                      </motion.button>
+                      <button
+                        type="button"
+                        onClick={resetFinishForm}
+                        className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Reset Finish
+                      </button>
+                    </div>
+                    <div className="mt-2 text-xs text-slate-500">Saves and closes session.</div>
                   </div>
                 </div>
-                )}
+              )}
             </motion.div>
-
-            
 
             <motion.div id="edit-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-4 flex items-start justify-between gap-3">
@@ -1378,9 +1371,7 @@ export default function App() {
               </div>
 
               {!editingSessionId ? (
-                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-center text-slate-500">
-                  Select a session from the table to edit.
-                </div>
+                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-left text-slate-500">Select a session from the table to edit.</div>
               ) : (
                 <div className="space-y-4">
                   <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
@@ -1397,7 +1388,7 @@ export default function App() {
                           value={editForm.initialBuyIn}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, initialBuyIn: e.target.value }))}
                           placeholder="e.g. 500"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-center flex-shrink-0"
+                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1408,7 +1399,7 @@ export default function App() {
                           value={editForm.cashOut}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, cashOut: e.target.value }))}
                           placeholder="0"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-center flex-shrink-0"
+                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1419,7 +1410,7 @@ export default function App() {
                           value={editForm.pocket}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, pocket: e.target.value }))}
                           placeholder="0"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-center flex-shrink-0"
+                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
                     </div>
@@ -1448,7 +1439,7 @@ export default function App() {
                             }))
                           }
                           placeholder={String(editingSessionId ? editingPreviousPointTotal : previousPointTotal)}
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-center flex-shrink-0"
+                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1457,9 +1448,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="mt-2 text-xs text-slate-500">
-                      Based on previous total: {editingPreviousPointTotal}
-                    </div>
+                    <div className="mt-2 text-xs text-slate-500">Based on previous total: {editingPreviousPointTotal}</div>
                   </div>
 
                   <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-md ring-1 ring-slate-800">
@@ -1505,14 +1494,14 @@ export default function App() {
                       value={manualHours}
                       onChange={(e) => setManualHours(e.target.value)}
                       placeholder="Optional manual override"
-                      className="h-10 w-24 sm:w-28 text-base font-semibold text-center flex-shrink-0"
+                      className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                     />
                   </Field>
 
                   <Field label="Notes">
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {["Good run","Tired","Drinks","Mistakes"].map(tag=> (
-                        <button key={tag} type="button" onClick={()=> setEditForm(p=>({...p,notes: p.notes ? p.notes+", "+tag : tag}))} className="px-3 py-1 rounded-full bg-slate-200 text-xs font-semibold">
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {["Good run", "Tired", "Drinks", "Mistakes"].map((tag) => (
+                        <button key={tag} type="button" onClick={() => setEditForm((p) => ({ ...p, notes: p.notes ? p.notes + ", " + tag : tag }))} className="px-3 py-1 rounded-full bg-slate-200 text-xs font-semibold">
                           {tag}
                         </button>
                       ))}
@@ -1641,7 +1630,7 @@ export default function App() {
             </div>
 
             {filteredSessions.length === 0 ? (
-              <div className="px-5 py-12 text-center text-slate-500">No sessions yet. Start your first session to begin tracking.</div>
+              <div className="px-5 py-12 text-left text-slate-500">No sessions yet. Start your first session to begin tracking.</div>
             ) : (
               <div className="overflow-x-auto rounded-b-3xl">
                 <div className="text-[10px] text-slate-400 px-2 pb-1 sm:hidden">Swipe to view →</div>
@@ -1650,17 +1639,17 @@ export default function App() {
                     <tr>
                       <th className="px-2 py-2 font-semibold w-24">Status</th>
                       <th className="px-2 py-2 font-semibold w-28">Date</th>
-                      <th className="px-2 py-2 font-semibold text-center w-20">Buy</th>
-                      <th className="px-2 py-2 font-semibold text-center w-20">Cash Out</th>
-                      <th className="px-2 py-2 font-semibold text-center w-20">Out of Play</th>
-                      <th className="px-2 py-2 font-semibold text-center w-24">Win</th>
-                      <th className="px-2 py-2 font-semibold text-center w-28">Total</th>
-                      <th className="px-2 py-2 font-semibold text-center w-28">Running</th>
-                      <th className="px-2 py-2 font-semibold text-center w-20">Hours</th>
-                      <th className="px-2 py-2 font-semibold text-center w-20">Points</th>
-                      <th className="px-2 py-2 font-semibold text-center w-20">Session</th>
+                      <th className="px-2 py-2 font-semibold text-right w-20">Buy</th>
+                      <th className="px-2 py-2 font-semibold text-right w-20">Cash Out</th>
+                      <th className="px-2 py-2 font-semibold text-right w-20">Out of Play</th>
+                      <th className="px-2 py-2 font-semibold text-right w-24">Win</th>
+                      <th className="px-2 py-2 font-semibold text-right w-28">Total</th>
+                      <th className="px-2 py-2 font-semibold text-right w-28">Running</th>
+                      <th className="px-2 py-2 font-semibold text-right w-20">Hours</th>
+                      <th className="px-2 py-2 font-semibold text-right w-20">Points</th>
+                      <th className="px-2 py-2 font-semibold text-right w-20">Session</th>
                       <th className="px-2 py-2 font-semibold w-20"></th>
-                      <th className="px-2 py-2 font-semibold text-center w-[90px] whitespace-normal leading-tight">Type</th>
+                      <th className="px-2 py-2 font-semibold text-left w-[90px] whitespace-normal leading-tight">Type</th>
                     </tr>
                   </thead>
                   <tbody className="[&>tr]:align-middle">
@@ -1669,8 +1658,8 @@ export default function App() {
                       const runningPerceived = completedMatch?.runningPerceived ?? 0;
 
                       return (
-                        <tr key={session.id} className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 hover:shadow-md hover:ring-slate-200 transition duration-150">
-                          <td className="px-2 py-2 align-middle text-center">
+                        <tr key={session.id} className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 hover:shadow-md hover:ring-slate-200 hover:bg-slate-50 transition duration-150">
+                          <td className="px-2 py-2 align-middle text-left">
                             {session.status === "active" ? (
                               <button
                                 type="button"
@@ -1692,7 +1681,7 @@ export default function App() {
                               </button>
                             )}
                           </td>
-                          <td className="px-2 py-2 text-slate-600 align-middle text-center whitespace-nowrap">
+                          <td className="px-2 py-2 text-slate-600 align-middle text-left whitespace-nowrap">
                             {session.startTime ? new Date(session.startTime).toLocaleDateString() : ""}
                           </td>
                           <td className="px-2 py-2 font-medium align-middle text-right whitespace-nowrap tabular-nums">{fmtCurrency(session.buyIn)}</td>
@@ -1737,7 +1726,9 @@ export default function App() {
                           <td className={`px-2 py-2 font-bold align-middle text-right whitespace-nowrap tabular-nums ${session.actual >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                             {session.status === "completed" ? fmtCurrency(session.actual) : "—"}
                           </td>
-                          <td className="px-2 py-2 align-middle text-right whitespace-nowrap tabular-nums">{session.status === "completed" ? fmtCurrency(session.perceived) : "—"}</td>
+                          <td className={`px-2 py-2 font-bold align-middle text-right whitespace-nowrap tabular-nums ${session.perceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {session.status === "completed" ? fmtCurrency(session.perceived) : "—"}
+                          </td>
                           <td className={`px-2 py-2 font-bold align-middle text-right whitespace-nowrap tabular-nums ${runningPerceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                             {session.status === "completed" ? fmtCurrency(runningPerceived) : "—"}
                           </td>
@@ -1752,7 +1743,7 @@ export default function App() {
                                   setSessions((prev) =>
                                     prev.map((s) =>
                                       s.id === session.id
-                                        ? { ...s, pointTotal: value === "" ? undefined : Number(value) }
+                                        ? { ...s, pointTotal: value === "" ? undefined : (Number(value) === 0 ? undefined : Number(value)) }
                                         : s
                                     )
                                   );
@@ -1763,7 +1754,7 @@ export default function App() {
                             ) : "—"}
                           </td>
                           <td className="px-2 py-2 align-middle text-right whitespace-nowrap tabular-nums">{session.status === "completed" ? (session.pointsEarned ?? "—") : "—"}</td>
-                          <td className="px-2 py-2 align-middle text-center">
+                          <td className="px-2 py-2 align-middle text-left">
                             <div className="flex justify-center gap-2">
                               <button
                                 type="button"
@@ -1783,7 +1774,7 @@ export default function App() {
                               </button>
                             </div>
                           </td>
-                          <td className="px-2 py-2 align-middle text-center min-w-[90px]">
+                          <td className="px-2 py-2 align-middle text-left min-w-[90px]">
                             <div className="font-semibold text-slate-900">{session.game}</div>
                             {session.notes && <div className="mt-1 max-w-xs truncate text-xs text-slate-500" title={session.notes}>Notes: {session.notes}</div>}
                           </td>
