@@ -1142,8 +1142,8 @@ export default function App() {
         )}
 
         <div className="grid gap-4 lg:gap-5 xl:grid-cols-1">
-          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory lg:grid lg:gap-4 lg:overflow-visible lg:pb-0 lg:grid-cols-3">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="min-w-[85vw] snap-start rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition lg:min-w-0">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-4">
                 <div className="text-base font-semibold">Step 1 · Start Session</div>
                 <div className="text-sm text-slate-500">Enter your buy-in and start the session timer.</div>
@@ -1227,7 +1227,7 @@ export default function App() {
               </div>
             </motion.div>
 
-            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="min-w-[85vw] snap-start rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition lg:min-w-0">
+            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-4">
                 <div className="text-base font-semibold">Step 2 · Finish Session</div>
                 <div className="text-sm text-slate-500">
@@ -1353,7 +1353,7 @@ export default function App() {
               )}
             </motion.div>
 
-            <motion.div id="edit-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="min-w-[85vw] snap-start rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition lg:min-w-0">
+            <motion.div id="edit-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <div className="text-base font-semibold">Step 3 · Edit Session</div>
