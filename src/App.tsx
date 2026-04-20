@@ -1141,7 +1141,7 @@ export default function App() {
           </div>
         )}
 
-        <div className="grid gap-4 lg:gap-5 xl:grid-cols-1">
+        <div className="w-full max-w-md grid gap-4 lg:max-w-none lg:gap-5 xl:grid-cols-1">
           <div className="grid w-full max-w-md gap-4 lg:max-w-none lg:grid-cols-3">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-4">
@@ -1539,7 +1539,7 @@ export default function App() {
             </motion.div>
           </div>
 
-          <div className="mb-5 w-full max-w-md rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm lg:max-w-none">
+          <div className="mb-5 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:max-w-none">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <div className="text-base font-semibold text-slate-900">Results Tracker</div>
