@@ -967,7 +967,7 @@ export default function App() {
           </div>
         </motion.div>
 
-        <div className="mb-5 grid w-full max-w-md gap-4 sm:gap-5 lg:max-w-none lg:grid-cols-[1.4fr_1fr]">
+        <div className="mb-5 grid w-[92%] max-w-md gap-4 sm:gap-5 lg:w-full lg:max-w-none lg:grid-cols-[1.4fr_1fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-base font-semibold text-slate-900">Casino / Location</div>
@@ -1141,7 +1141,7 @@ export default function App() {
           </div>
         )}
 
-        <div className="w-full max-w-md grid gap-4 lg:max-w-none lg:gap-5 xl:grid-cols-1">
+        <div className="w-[92%] max-w-md grid gap-4 lg:w-full lg:max-w-none lg:gap-5 xl:grid-cols-1">
           <div className="grid w-full gap-4 lg:grid-cols-3">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-3">
