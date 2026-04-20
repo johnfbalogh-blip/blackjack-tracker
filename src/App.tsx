@@ -1539,31 +1539,31 @@ export default function App() {
             </motion.div>
           </div>
 
-          <div className="mb-5 rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <div className="text-base font-semibold text-slate-900">Results Tracker</div>
-              <div className="text-sm text-slate-500">Your current performance for {tripName}.</div>
+          <div className="mb-5 w-full max-w-md rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm lg:max-w-none">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-base font-semibold text-slate-900">Results Tracker</div>
+                <div className="text-sm text-slate-500">Your current performance for {tripName}.</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <SmallStat icon={Wallet} label="Bankroll" value={fmtCurrency(summary.bankroll)} />
+              <SmallStat
+                icon={summary.totalActual >= 0 ? TrendingUp : TrendingDown}
+                label="Win/Loss"
+                value={fmtCurrency(summary.totalActual)}
+                tone={summary.totalActual >= 0 ? "positive" : "negative"}
+              />
+              <SmallStat icon={Clock3} label="Hours" value={`${summary.totalHours.toFixed(2)} hrs`} />
+              <SmallStat
+                icon={TrendingUp}
+                label="Hourly"
+                value={fmtCurrency(summary.hourly)}
+                tone={summary.hourly >= 0 ? "positive" : "negative"}
+              />
+              <SmallStat icon={TrendingUp} label="Points" value={String(summary.sessionPoints)} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            <SmallStat icon={Wallet} label="Bankroll" value={fmtCurrency(summary.bankroll)} />
-            <SmallStat
-              icon={summary.totalActual >= 0 ? TrendingUp : TrendingDown}
-              label="Win/Loss"
-              value={fmtCurrency(summary.totalActual)}
-              tone={summary.totalActual >= 0 ? "positive" : "negative"}
-            />
-            <SmallStat icon={Clock3} label="Hours" value={`${summary.totalHours.toFixed(2)} hrs`} />
-            <SmallStat
-              icon={TrendingUp}
-              label="Hourly"
-              value={fmtCurrency(summary.hourly)}
-              tone={summary.hourly >= 0 ? "positive" : "negative"}
-            />
-            <SmallStat icon={TrendingUp} label="Points" value={String(summary.sessionPoints)} />
-          </div>
-        </div>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
