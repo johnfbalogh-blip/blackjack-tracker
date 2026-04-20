@@ -4,7 +4,6 @@ import {
   Download,
   Pencil,
   Play,
-  PlusCircle,
   RotateCcw,
   Square,
   Trash2,
@@ -27,8 +26,6 @@ type Session = {
   location: string;
   game: string;
   initialBuyIn: number;
-  rebuyTotal: number;
-  rebuys: number[];
   buyIn: number;
   cashOut: number;
   pocket: number;
@@ -128,10 +125,9 @@ function downloadCSV(rows: Session[]) {
     "Location",
     "Game",
     "Initial Buy In",
-    "Rebuy Total",
     "Total Buy In",
     "Cash Out",
-    "REMOVED",
+    "Out of Play",
     "Open Session",
     "Win Loss",
     "Total Win/Loss",
@@ -140,7 +136,7 @@ function downloadCSV(rows: Session[]) {
     "End Time",
     "Hours",
     "Casino Point Total",
-    "Points Earned",
+    "Session Points",
     "Notes",
   ];
 
@@ -153,7 +149,6 @@ function downloadCSV(rows: Session[]) {
         `"${(r.location || "").replace(/"/g, '""')}"`,
         `"${(r.game || "").replace(/"/g, '""')}"`,
         r.initialBuyIn,
-        r.rebuyTotal,
         r.buyIn,
         r.cashOut,
         r.pocket,
@@ -274,15 +269,25 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [timerNow, setTimerNow] = useState(Date.now());
-  const [rebuyAmount, setRebuyAmount] = useState("");
   
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [manualHours, setManualHours] = useState("");
   const [editingOriginalPrevPoints, setEditingOriginalPrevPoints] = useState(0);
   const [startingBankroll, setStartingBankroll] = useState(() => {
     if (typeof window === "undefined") return "";
-    const saved = window.localStorage.getItem("starting-bankroll");
-    return saved ? saved : "";
+
+    const newKey = window.localStorage.getItem("out-of-pocket-bankroll");
+    if (newKey !== null) return newKey;
+
+    // 🔁 Migration from old key
+    const oldKey = window.localStorage.getItem("starting-bankroll");
+    if (oldKey !== null) {
+      window.localStorage.setItem("out-of-pocket-bankroll", oldKey);
+      window.localStorage.removeItem("starting-bankroll");
+      return oldKey;
+    }
+
+    return "";
   });
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [lastClearedData, setLastClearedData] = useState<{
@@ -300,7 +305,7 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("starting-bankroll", startingBankroll);
+    window.localStorage.setItem("out-of-pocket-bankroll", startingBankroll);
   }, [startingBankroll]);
 
   const activeSession = useMemo(
@@ -351,7 +356,14 @@ export default function App() {
     const hourly = totalHours >= 1 ? totalActual / totalHours : 0;
     const needsPocketCount = openSessionCount;
     const bankroll = Number(startingBankroll || 0) + totalActual;
-    return { totalActual, totalHours, hourly, needsPocketCount, bankroll };
+
+    // total session points across all completed sessions
+    const sessionPoints = completedSessions.reduce(
+      (sum, s) => sum + (s.pointsEarned || 0),
+      0
+    );
+
+    return { totalActual, totalHours, hourly, needsPocketCount, bankroll, sessionPoints };
   }, [completedSessions, startingBankroll, openSessionCount]);
 
   const recentLocations = useMemo(() => {
@@ -380,14 +392,9 @@ export default function App() {
     return Math.max(0, (timerNow - start) / (1000 * 60 * 60));
   }, [activeSession, timerNow]);
 
-  const finishRebuyTotal = useMemo(
-    () => (activeSession?.rebuys || []).reduce((sum, value) => sum + value, 0),
-    [activeSession]
-  );
-
   const finishTotalBuyIn = useMemo(
-    () => Number(activeSession?.initialBuyIn || 0) + finishRebuyTotal,
-    [activeSession, finishRebuyTotal]
+    () => Number(activeSession?.initialBuyIn || 0),
+    [activeSession]
   );
 
   const finishActual = useMemo(() => {
@@ -448,7 +455,6 @@ export default function App() {
       pocket: "",
       pointTotal: "",
     });
-    setRebuyAmount("");
   };
 
   const resetEditForm = () => {
@@ -486,8 +492,6 @@ export default function App() {
       location: globalSettings.location.trim() || lastSessionLocation,
       game: globalSettings.game.trim() || "Blackjack",
       initialBuyIn,
-      rebuyTotal: 0,
-      rebuys: [],
       buyIn: initialBuyIn,
       cashOut: 0,
       pocket: 0,
@@ -509,53 +513,14 @@ export default function App() {
     setTimerNow(Date.now());
   };
 
-  const addRebuyToActive = (amountOverride?: number) => {
-    if (!activeSession) return;
-    const amount = Number(amountOverride ?? rebuyAmount);
-    if (!amount || amount <= 0) return;
-
-    setSessions((prev) =>
-      prev.map((session) => {
-        if (session.id !== activeSession.id) return session;
-        const rebuys = [...session.rebuys, amount];
-        const rebuyTotal = rebuys.reduce((sum, value) => sum + value, 0);
-        return {
-          ...session,
-          rebuys,
-          rebuyTotal,
-          buyIn: session.initialBuyIn + rebuyTotal,
-        };
-      })
-    );
-    setRebuyAmount("");
-  };
-
-  const removeRebuyFromActive = (index: number) => {
-    if (!activeSession) return;
-
-    setSessions((prev) =>
-      prev.map((session) => {
-        if (session.id !== activeSession.id) return session;
-        const rebuys = session.rebuys.filter((_, i) => i !== index);
-        const rebuyTotal = rebuys.reduce((sum, value) => sum + value, 0);
-        return {
-          ...session,
-          rebuys,
-          rebuyTotal,
-          buyIn: session.initialBuyIn + rebuyTotal,
-        };
-      })
-    );
-  };
-
+  
   const finishSession = () => {
     if (!activeSession) return;
     const cashOut = Number(finishForm.cashOut || 0);
     const pocket = Number(finishForm.pocket || 0);
     const pointTotal = finishForm.pointTotal === "" ? undefined : Number(finishForm.pointTotal);
     const endTime = toLocalInputValue(new Date(), true);
-    const rebuyTotal = activeSession.rebuys.reduce((sum, value) => sum + value, 0);
-    const buyIn = activeSession.initialBuyIn + rebuyTotal;
+    const buyIn = activeSession.initialBuyIn;
     const actual = cashOut + pocket - buyIn;
     const perceived = cashOut - buyIn;
     const pointsEarned = pointTotal === undefined ? undefined : pointTotal - previousPointTotal;
@@ -567,7 +532,6 @@ export default function App() {
           ? {
               ...session,
               status: "completed",
-              rebuyTotal,
               buyIn,
               cashOut,
               pocket,
@@ -623,8 +587,6 @@ export default function App() {
         const cashOut = Number(editForm.cashOut || 0);
         const pocket = Number(editForm.pocket || 0);
         const pointTotal = editForm.pointTotal === "" ? undefined : Number(editForm.pointTotal);
-        const rebuys: number[] = [];
-        const rebuyTotal = 0;
         const initialBuyIn = buyIn;
         const pointsEarned = pointTotal === undefined ? undefined : pointTotal - editingPreviousPointTotal;
         const hours =
@@ -634,7 +596,6 @@ export default function App() {
 
         return {
           ...session,
-          rebuys,
           location: editForm.location.trim(),
           game: editForm.game.trim() || "Blackjack",
           initialBuyIn,
@@ -646,7 +607,6 @@ export default function App() {
           pointsEarned,
           startTime,
           endTime,
-          rebuyTotal,
           buyIn,
           actual: cashOut + pocket - buyIn,
           perceived: cashOut - buyIn,
@@ -724,7 +684,7 @@ export default function App() {
 
     if (typeof window !== "undefined") {
       localStorage.removeItem("blackjack-sessions");
-      localStorage.removeItem("starting-bankroll");
+      localStorage.removeItem("out-of-pocket-bankroll");
     }
 
     setSessions([]);
@@ -784,69 +744,57 @@ export default function App() {
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl bg-slate-50 p-4">
                 <div className="text-sm font-semibold text-slate-900">Top Section · Bankroll + Defaults</div>
-                <div className="mt-2 text-sm text-slate-600">Set the items that usually stay the same while you are playing.</div>
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  <div><span className="font-semibold text-slate-800">Starting Bankroll:</span> Your money base before session results are applied.</div>
-                  <div><span className="font-semibold text-slate-800">Current Bankroll:</span> Starting Bankroll plus total completed Win/Loss.</div>
-                  <div><span className="font-semibold text-slate-800">Casino / Location:</span> Your current casino or playing location. Leave it blank and Session Edge can reuse your most recent session location.</div>
-                  <div><span className="font-semibold text-slate-800">Session Type:</span> The game you are playing now, such as Blackjack, Slots, Poker, or Other.</div>
-                  <div><span className="font-semibold text-slate-800">Bankroll Buttons:</span> Quick add buttons increase your starting bankroll input.</div>
+                <div className="mt-2 text-sm text-slate-600">Set your baseline before you start playing.</div>
+                <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
+                  <div><span className="font-semibold text-slate-800">Out of Pocket Bankroll:</span> Your real money invested into play.</div>
+                  <div><span className="font-semibold text-slate-800">Current Bankroll:</span> Updates automatically with your results.</div>
+                  <div><span className="font-semibold text-slate-800">Location:</span> Defaults to your last session if left blank.</div>
+                  <div><span className="font-semibold text-slate-800">Session Type:</span> Your current game (Blackjack, Slots, etc).</div>
                 </div>
               </div>
 
               <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="text-sm font-semibold text-slate-900">Step 1 · Start Session</div>
-                <div className="mt-2 text-sm text-slate-600">Enter only the money needed to begin the session.</div>
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  <div><span className="font-semibold text-slate-800">Initial Buy-In:</span> The first money put into action for this session.</div>
-                  <div><span className="font-semibold text-slate-800">Shortcut Buttons:</span> Tap to add to the buy-in. Press and hold to replace the amount.</div>
-                  <div><span className="font-semibold text-slate-800">Same Buy-In:</span> Reuses your most recent buy-in amount.</div>
-                  <div><span className="font-semibold text-slate-800">Start Session:</span> Opens the session and starts the timer.</div>
+                <div className="text-sm font-semibold text-slate-900">Step 1 · Start</div>
+                <div className="mt-2 text-sm text-slate-600">Enter only what hits the table.</div>
+                <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
+                  <div><span className="font-semibold text-slate-800">Buy-In:</span> Initial money in action.</div>
+                  <div><span className="font-semibold text-slate-800">Shortcuts:</span> Tap = add, Hold = replace.</div>
+                  <div><span className="font-semibold text-slate-800">Same Buy-In:</span> Reuse last amount instantly.</div>
                 </div>
               </div>
 
               <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="text-sm font-semibold text-slate-900">Step 2 · Finish Session</div>
-                <div className="mt-2 text-sm text-slate-600">Add rebuys during play, then enter final numbers when you finish the session.</div>
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  <div><span className="font-semibold text-slate-800">Rebuys:</span> Extra money added during the session (tracked live in Step 2).</div>
-                  <div><span className="font-semibold text-slate-800">Cash-Out:</span> What you leave the table with at the end of play.</div>
-                  <div><span className="font-semibold text-slate-800">REMOVED:</span> Money taken off the table during play (chips pocketed, tips, drinks, etc).</div>
-                  <div><span className="font-semibold text-slate-800">Point Total:</span> Enter your total casino points after this session.</div>
-                  <div><span className="font-semibold text-slate-800">Finish Session:</span> Closes the session and locks in results.</div>
+                <div className="text-sm font-semibold text-slate-900">Step 2 · Finish</div>
+                <div className="mt-2 text-sm text-slate-600">Enter final results.</div>
+                <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
+                  <div><span className="font-semibold text-slate-800">Cash-Out:</span> What you walk away with.</div>
+                  <div><span className="font-semibold text-slate-800">Out of Play:</span> Money removed during play.</div>
+                  <div><span className="font-semibold text-slate-800">Point Total:</span> Your casino total after session.</div>
                 </div>
               </div>
 
               <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="text-sm font-semibold text-slate-900">Step 3 · Edit Session</div>
-                <div className="mt-2 text-sm text-slate-600">Clean up or adjust saved sessions quickly.</div>
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  <div>Edit total buy-in, cash-out, REMOVED, points, time, and notes.</div>
-                  <div>Updating a Point Total will automatically adjust the point chain for later sessions.</div>
-                  <div>Click <span className="font-semibold text-slate-800">Completed</span> or the pencil icon to edit a session.</div>
+                <div className="text-sm font-semibold text-slate-900">Step 3 · Edit</div>
+                <div className="mt-2 text-sm text-slate-600">Fix or adjust sessions.</div>
+                <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
+                  <div>Edit numbers, time, and notes.</div>
+                  <div>Point totals auto-recalculate forward.</div>
                 </div>
               </div>
 
               <div className="rounded-2xl bg-slate-50 p-4 lg:col-span-2">
-                <div className="text-sm font-semibold text-slate-900">Definitions + Point Tracking</div>
-                <div className="mt-3 grid gap-4 lg:grid-cols-2 text-sm text-slate-600">
+                <div className="text-sm font-semibold text-slate-900">Key Concepts</div>
+                <div className="mt-3 grid gap-4 lg:grid-cols-2 text-sm text-slate-600 leading-relaxed">
                   <div className="space-y-2">
-                    <div><span className="font-semibold text-slate-800">Buy-In:</span> The total amount in action for the session.</div>
-                    <div><span className="font-semibold text-slate-800">Win/Loss:</span> Cash-Out + REMOVED - Total Buy-In (your real result).</div>
-                    <div><span className="font-semibold text-slate-800">Total Win/Loss:</span> Cash-Out - Total Buy-In (table result only).</div>
-                    <div><span className="font-semibold text-slate-800">Running Total:</span> Rolling total of Total Win/Loss across completed sessions.</div>
-                    <div><span className="font-semibold text-slate-800">Hours:</span> Session time from start to finish. Sessions under 5 minutes are ignored in summary totals.</div>
-                    <div><span className="font-semibold text-slate-800">Status:</span> Active means open. Completed means finished and saved.</div>
+                    <div><span className="font-semibold text-slate-800">Win/Loss:</span> Cash-Out + Out of Play - Buy-In.</div>
+                    <div><span className="font-semibold text-slate-800">Total Win/Loss:</span> Table-only result.</div>
+                    <div><span className="font-semibold text-slate-800">Running Total:</span> Your cumulative performance.</div>
+                    <div><span className="font-semibold text-slate-800">Hours:</span> Tracks real play time.</div>
                   </div>
                   <div className="space-y-2">
-                    <div><span className="font-semibold text-slate-800">How points work:</span> Enter your total casino points after each session. Session Edge allocates the increase to that session.</div>
-                    <div><span className="font-semibold text-slate-800">Example:</span></div>
-                    <div>Session 1 total: 1,000 → Points Earned: 1,000</div>
-                    <div>Session 2 total: 1,400 → Points Earned: 400</div>
-                    <div>Session 3 total: 1,900 → Points Earned: 500</div>
-                    <div>Blank point totals do not break the chain. Only entered totals affect later sessions.</div>
-                    <div><span className="font-semibold text-slate-800">Point Total:</span> The cumulative total shown by the casino after the session.</div>
-                    <div><span className="font-semibold text-slate-800">Points Earned:</span> This session's share of the increase from the previous entered total.</div>
+                    <div><span className="font-semibold text-slate-800">Points:</span> Enter totals, app calculates differences.</div>
+                    <div>Example: 1000 → 1400 = 400 session points.</div>
+                    <div>Missing entries don’t break tracking.</div>
                   </div>
                 </div>
               </div>
@@ -861,7 +809,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight leading-tight">Session Edge</h1>
               <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
-                V2.1
+                V2.2
               </span>
             </div>
             <p className="mt-1 text-sm text-slate-500 max-w-xl">
@@ -922,10 +870,18 @@ export default function App() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Bankroll</div>
-                <div className="text-xl font-bold text-slate-900">Starting Bankroll</div>
+                <div className="flex items-center gap-2 text-xl font-bold text-slate-900">
+                  Out of Pocket Bankroll
+                  <span className="relative group cursor-pointer">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">?</span>
+                    <span className="absolute left-1/2 top-7 z-10 hidden w-56 -translate-x-1/2 rounded-xl bg-slate-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block">
+                      Your personal money invested into play
+                    </span>
+                  </span>
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-slate-500">Current</div>
+                <div className="text-xs text-slate-500">Current Bankroll</div>
                 <div className="text-lg font-semibold text-emerald-600">{fmtCurrency(summary.bankroll)}</div>
               </div>
             </div>
@@ -953,7 +909,7 @@ export default function App() {
             </div>
 
             <div className="text-xs text-slate-500">
-              Bankroll updates automatically based on completed session results.
+              Current bankroll updates automatically based on completed session results.
             </div>
           </div>
         </div>
@@ -994,6 +950,11 @@ export default function App() {
             label="Hourly"
             value={fmtCurrency(summary.hourly)}
             tone={summary.hourly >= 0 ? "positive" : "negative"}
+          />
+          <SmallStat
+            icon={TrendingUp}
+            label="Total Points"
+            value={String(summary.sessionPoints)}
           />
           
         </div>
@@ -1090,7 +1051,7 @@ export default function App() {
               <div className="mb-4">
                 <div className="text-lg font-semibold">Step 2 · Finish Session</div>
                 <div className="text-sm text-slate-500">
-                  {activeSession ? "Add rebuys, enter cash-out, finish." : "Start a session first to unlock this step."}
+                  {activeSession ? "Enter cash-out and finish." : "Start a session first to unlock this step."}
                 </div>
               </div>
 
@@ -1113,14 +1074,10 @@ export default function App() {
                         <div className="text-2xl font-bold tracking-wide">{activeElapsed}</div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="grid grid-cols-3 gap-3 sm:grid-cols-3">
                       <div>
                         <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Initial</div>
                         <div className="text-lg font-semibold">{fmtCurrency(activeSession.initialBuyIn)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Rebuys</div>
-                        <div className="text-lg font-semibold">{fmtCurrency(finishRebuyTotal)}</div>
                       </div>
                       <div>
                         <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Total Buy-In</div>
@@ -1136,7 +1093,7 @@ export default function App() {
                   <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
                     <div className="mb-2">
                       <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Session Entry</div>
-                      <div className="text-lg font-bold text-slate-900">Cash-Out · REMOVED · Points</div>
+                      <div className="text-lg font-bold text-slate-900">Cash-Out · Out of Play · Points</div>
                     </div>
 
                     <div className="flex items-center gap-3 flex-wrap">
@@ -1151,7 +1108,7 @@ export default function App() {
                         />
                       </Field>
 
-                      <Field label="REMOVED">
+                      <Field label="Out of Play">
                         <Input
                           type="number"
                           inputMode="decimal"
@@ -1183,7 +1140,7 @@ export default function App() {
                     <div className={`text-4xl font-bold tracking-tight ${finishActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                       {fmtCurrency(finishActual)}
                     </div>
-                    <div className="mt-2 text-sm text-slate-300">Cash-Out + REMOVED - Total Buy-In</div>
+                    <div className="mt-2 text-sm text-slate-300">Cash-Out + Out of Play - Total Buy-In</div>
                   </div>
 
                   <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
@@ -1272,7 +1229,7 @@ export default function App() {
                         />
                       </Field>
 
-                      <Field label="REMOVED">
+                      <Field label="Out of Play">
                         <Input
                           type="number"
                           inputMode="decimal"
@@ -1327,7 +1284,7 @@ export default function App() {
                     <div className={`text-4xl font-bold tracking-tight ${editActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                       {fmtCurrency(editActual)}
                     </div>
-                    <div className="mt-2 text-sm text-slate-300">Based on edited total buy-in, cash-out, and REMOVED.</div>
+                    <div className="mt-2 text-sm text-slate-300">Based on edited total buy-in, cash-out, and Out of Play.</div>
                   </div>
 
                   <div className="flex items-center gap-3 flex-wrap">
@@ -1461,22 +1418,22 @@ export default function App() {
               <div className="px-5 py-12 text-center text-slate-500">No sessions yet. Start Session to begin.</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm border-separate border-spacing-y-1">
-                  <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.16em] text-slate-500">
+                <table className="min-w-full text-sm border-separate border-spacing-y-2 [font-variant-numeric:tabular-nums]">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
                     <tr>
-                      <th className="px-4 py-3.5 font-semibold">Status</th>
-                      <th className="px-4 py-3.5 font-semibold">Date</th>
-                      <th className="px-4 py-3.5 font-semibold">Session</th>
-                      <th className="px-4 py-3.5 font-semibold">Buy-In</th>
-                      <th className="px-4 py-3.5 font-semibold">Cash-Out</th>
-                      <th className="px-4 py-3.5 font-semibold">REMOVED</th>
-                      <th className="px-4 py-3.5 font-semibold">Win/Loss</th>
-                      <th className="px-4 py-3.5 font-semibold">Total Win/Loss</th>
-                      <th className="px-4 py-3.5 font-semibold">Running Total</th>
-                      <th className="px-4 py-3.5 font-semibold">Hours</th>
-                      <th className="px-4 py-3.5 font-semibold">Point Total</th>
-                      <th className="px-4 py-3.5 font-semibold">Points Earned</th>
-                      <th className="px-4 py-3.5 font-semibold"></th>
+                      <th className="px-4 py-3.5 font-semibold w-28">Status</th>
+                      <th className="px-4 py-3.5 font-semibold w-32">Date</th>
+                      <th className="px-4 py-3.5 font-semibold text-left w-[220px]">Session</th>
+                      <th className="px-4 py-3.5 font-semibold text-right w-32">Buy-In</th>
+                      <th className="px-4 py-3.5 font-semibold w-32">Cash-Out</th>
+                      <th className="px-4 py-3.5 font-semibold w-32">Out of Play</th>
+                      <th className="px-4 py-3.5 font-semibold text-right w-36">Win/Loss</th>
+                      <th className="px-4 py-3.5 font-semibold text-right w-40">Total Win/Loss</th>
+                      <th className="px-4 py-3.5 font-semibold text-right w-40">Running Total</th>
+                      <th className="px-4 py-3.5 font-semibold text-right w-24">Hours</th>
+                      <th className="px-4 py-3.5 font-semibold w-32">Point Total</th>
+                      <th className="px-4 py-3.5 font-semibold w-32">Session Points</th>
+                      <th className="px-4 py-3.5 font-semibold w-24"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1485,8 +1442,8 @@ export default function App() {
                       const runningPerceived = completedMatch?.runningPerceived ?? 0;
 
                       return (
-                        <tr key={session.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition align-top">
-                          <td className="px-4 py-3.5">
+                        <tr key={session.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition">
+                          <td className="px-4 py-3.5 align-middle">
                             {session.status === "active" ? (
                               <button
                                 type="button"
@@ -1508,18 +1465,18 @@ export default function App() {
                               </button>
                             )}
                           </td>
-                          <td className="px-4 py-3.5 text-slate-600">
+                          <td className="px-4 py-3.5 text-slate-600 align-middle">
                             {session.startTime ? new Date(session.startTime).toLocaleDateString() : ""}
                           </td>
-                          <td className="px-4 py-3.5">
+                          <td className="px-4 py-3.5 align-middle text-left min-w-[160px]">
                             <div className="font-semibold text-slate-900">{session.location || "—"}</div>
                             <div className="text-slate-500">{session.game}</div>
-                            {session.rebuyTotal > 0 && <div className="text-slate-500">Rebuys: {fmtCurrency(session.rebuyTotal)}</div>}
+                            
                             {session.notes && <div className="mt-1 max-w-xs truncate text-xs text-slate-500" title={session.notes}>Notes: {session.notes}</div>}
                             
                           </td>
-                          <td className="px-4 py-3.5 font-medium">{fmtCurrency(session.buyIn)}</td>
-                          <td className="px-4 py-3.5">
+                          <td className="px-4 py-3.5 font-medium align-middle text-right whitespace-nowrap">{fmtCurrency(session.buyIn)}</td>
+                          <td className="px-4 py-3.5 align-middle">
                             {session.status === "completed" ? (
                               <input
                                 type="number"
@@ -1534,11 +1491,11 @@ export default function App() {
                                     )
                                   );
                                 }}
-                                className="w-24 rounded-xl border border-slate-200 px-2.5 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                                className="h-10 w-24 rounded-xl border border-slate-200 px-2.5 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-emerald-200"
                               />
                             ) : "—"}
                           </td>
-                          <td className="px-4 py-3.5">
+                          <td className="px-4 py-3.5 align-middle">
                             {session.status === "completed" ? (
                               <input
                                 type="number"
@@ -1553,19 +1510,19 @@ export default function App() {
                                     )
                                   );
                                 }}
-                                className="w-24 rounded-xl border border-slate-200 px-2.5 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                                className="h-10 w-24 rounded-xl border border-slate-200 px-2.5 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-emerald-200"
                               />
                             ) : "—"}
                           </td>
-                          <td className={`px-4 py-3 font-semibold ${session.actual >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                          <td className={`px-4 py-3.5 font-semibold align-middle whitespace-nowrap ${session.actual >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                             {session.status === "completed" ? fmtCurrency(session.actual) : "—"}
                           </td>
-                          <td className="px-4 py-3.5">{session.status === "completed" ? fmtCurrency(session.perceived) : "—"}</td>
-                          <td className={`px-4 py-3 font-semibold ${runningPerceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                          <td className="px-4 py-3.5 align-middle whitespace-nowrap">{session.status === "completed" ? fmtCurrency(session.perceived) : "—"}</td>
+                          <td className={`px-4 py-3.5 font-semibold align-middle whitespace-nowrap ${runningPerceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                             {session.status === "completed" ? fmtCurrency(runningPerceived) : "—"}
                           </td>
-                          <td className="px-4 py-3.5">{session.status === "completed" ? session.hours.toFixed(2) : activeSession?.id === session.id ? activeHours.toFixed(2) : "—"}</td>
-                          <td className="px-4 py-3.5">
+                          <td className="px-4 py-3.5 align-middle">{session.status === "completed" ? session.hours.toFixed(2) : activeSession?.id === session.id ? activeHours.toFixed(2) : "—"}</td>
+                          <td className="px-4 py-3.5 align-middle">
                             {session.status === "completed" ? (
                               <input
                                 type="number"
@@ -1584,13 +1541,13 @@ export default function App() {
                                   );
                                 }}
                                 placeholder="—"
-                                className="w-24 rounded-xl border border-slate-200 px-2.5 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                                className="h-10 w-24 rounded-xl border border-slate-200 px-2.5 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-emerald-200"
                               />
                             ) : "—"}
                           </td>
-                          <td className="px-4 py-3.5">{session.status === "completed" ? (session.pointsEarned ?? "—") : "—"}</td>
-                          <td className="px-4 py-3.5">
-                            <div className="flex gap-2">
+                          <td className="px-4 py-3.5 align-middle">{session.status === "completed" ? (session.pointsEarned ?? "—") : "—"}</td>
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="flex justify-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => editSession(session)}
