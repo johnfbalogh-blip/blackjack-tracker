@@ -227,7 +227,7 @@ function SmallStat({
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.99 }}
       transition={{ duration: 0.15 }}
-      className="h-16 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm flex flex-col justify-center"
+      className="h-16 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm flex flex-col justify-center"
     >
       <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
         <Icon className="h-4 w-4 shrink-0" />
@@ -238,7 +238,7 @@ function SmallStat({
   );
 }
 
-// 🔒 HARD SAVED VERSION 2.4 - FINAL LOCKED (UNIFIED WIDTH FIX APPLIED)
+// 🔒 HARD SAVED VERSION 2.4 - FINAL LOCKED (WIDTH + HEADER + ALIGNMENT COMPLETE)
 // Do not modify core logic without version bump
 export default function App() {
   // 🔹 NEW: Trip tracking
@@ -316,6 +316,9 @@ export default function App() {
     }));
   };
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [confirmClearAllFinal, setConfirmClearAllFinal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [confirmClearLocation, setConfirmClearLocation] = useState(false);
   const [lastClearedData, setLastClearedData] = useState<{
     sessions: Session[];
     startingBankroll: string;
@@ -828,109 +831,126 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <AnimatePresence>
-      {showHelp && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/50 p-4 sm:items-center"
-          onClick={() => setShowHelp(false)}
-        >
+        {showHelp && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/50 p-4 sm:items-center"
+            onClick={() => setShowHelp(false)}
           >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <div className="text-base font-semibold">Quick Guide · Session Edge</div>
-                <div className="text-sm text-slate-500">Fast reference to get in, play, and track correctly.</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowHelp(false)}
-                className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="text-sm font-semibold text-slate-900">Top Section · Location &amp; Bankroll</div>
-                <div className="mt-2 text-sm text-slate-600">Set your location, choose a game, and enter bankroll.</div>
-                <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
-                  <div><span className="font-semibold text-slate-800">Casino / Location:</span> Your active place of play. All sessions are grouped here.</div>
-                  <div><span className="font-semibold text-slate-800">Type:</span> Game played for this location (Blackjack, Ultimate, 3 Card, Slots, Other).</div>
-                  <div><span className="font-semibold text-slate-800">Out of Pocket Bankroll:</span> Your personal money used for this location.</div>
-                  <div><span className="font-semibold text-slate-800">Current Bankroll:</span> Starting bankroll + completed session results.</div>
-                  <div><span className="font-semibold text-slate-800">Rename:</span> Updates the location name across all sessions.</div>
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-base font-semibold">Quick Guide · Session Edge</div>
+                  <div className="text-sm text-slate-500">Fast reference to get in, play, and track correctly.</div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowHelp(false)}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Close
+                </button>
               </div>
 
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="text-sm font-semibold text-slate-900">Step 1 · Start</div>
-                <div className="mt-2 text-sm text-slate-600">Enter what you bring to the table.</div>
-                <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
-                  <div><span className="font-semibold text-slate-800">Buy-In:</span> Money you put into play at the start of the session.</div>
-                  <div><span className="font-semibold text-slate-800">Shortcuts:</span> Tap = add amount, Hold = replace amount.</div>
-                  <div><span className="font-semibold text-slate-800">Same Buy-In:</span> Reuse the most recent buy-in instantly.</div>
-                  <div><span className="font-semibold text-slate-800">One Buy-In:</span> This version does not track rebuys separately.</div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="text-sm font-semibold text-slate-900">Step 2 · Finish</div>
-                <div className="mt-2 text-sm text-slate-600">Enter final results and close the session.</div>
-                <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
-                  <div><span className="font-semibold text-slate-800">Cash Out:</span> What you walk away with.</div>
-                  <div><span className="font-semibold text-slate-800">Out of Play:</span> Chips taken off the table during play.</div>
-                  <div><span className="font-semibold text-slate-800">Point Total:</span> Your casino total after session. The app uses the change from the previous total to calculate Session Points.</div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <div className="text-sm font-semibold text-slate-900">Step 3 · Edit</div>
-                <div className="mt-2 text-sm text-slate-600">Edit or correct any session.</div>
-                <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
-                  <div>Edit numbers, time, and notes.</div>
-                  <div>Point totals automatically update forward.</div>
-                  <div>You can edit Cash Out, Out of Play, and Points directly in the table.</div>
-                  <div>Changes update instantly.</div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-4 lg:col-span-2">
-                <div className="text-sm font-semibold text-slate-900">Key Concepts</div>
-                <div className="mt-3 grid gap-4 lg:grid-cols-2 text-sm text-slate-600 leading-relaxed">
-                  <div className="space-y-2">
-                    <div><span className="font-semibold text-slate-800">Win/Loss:</span> Cash Out + Out of Play - Buy-In.</div>
-                    <div><span className="font-semibold text-slate-800">Total:</span> Table-only result (excludes pocket).</div>
-                    <div><span className="font-semibold text-slate-800">Running:</span> Cumulative total over time.</div>
-                    <div><span className="font-semibold text-slate-800">Hours:</span> Actual play time.</div>
-                  </div>
-                  <div className="space-y-2">
-                    <div><span className="font-semibold text-slate-800">Points:</span> Enter your casino total, the app calculates session points automatically.</div>
-                    <div>Example: 1000 → 1400 = 400 session points earned.</div>
-                    <div><span className="font-semibold text-slate-800">Per Location:</span> Bankroll and game type are saved.</div>
-                    <div><span className="font-semibold text-slate-800">Clear This Location:</span> Removes only sessions for the active location.</div>
-                    <div><span className="font-semibold text-slate-800">Clear All:</span> Removes all sessions \(keeps locations & bankrolls\).</div>
-                    <div><span className="font-semibold text-slate-800">Restore:</span> After clearing, you can restore the last cleared sessions or permanently discard that backup.</div>
-                    <div><span className="font-semibold text-slate-800">Sessions Table:</span> Header shows location; Type column shows the game.</div>
+              <div className="grid gap-3 lg:grid-cols-2">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <div className="text-sm font-semibold text-slate-900">Top Section · Location &amp; Bankroll</div>
+                  <div className="mt-2 text-sm text-slate-600">Set your location, choose a game, and enter bankroll.</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
+                    <div><span className="font-semibold text-slate-800">Casino / Location:</span> Your active place of play. All sessions are grouped here.</div>
+                    <div><span className="font-semibold text-slate-800">Type:</span> Game played for this location (Blackjack, Ultimate, 3 Card, Slots, Other).</div>
+                    <div><span className="font-semibold text-slate-800">Out of Pocket Bankroll:</span> Your personal money used for this location.</div>
+                    <div><span className="font-semibold text-slate-800">Current Bankroll:</span> Starting bankroll + completed session results.</div>
+                    <div><span className="font-semibold text-slate-800">Rename:</span> Updates the location name across all sessions.</div>
                   </div>
                 </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <div className="text-sm font-semibold text-slate-900">Step 1 · Start</div>
+                  <div className="mt-2 text-sm text-slate-600">Enter what you bring to the table.</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
+                    <div><span className="font-semibold text-slate-800">Buy-In:</span> Money you put into play at the start of the session.</div>
+                    <div><span className="font-semibold text-slate-800">Shortcuts:</span> Tap = add amount, Hold = replace amount.</div>
+                    <div><span className="font-semibold text-slate-800">Same Buy-In:</span> Reuse the most recent buy-in instantly.</div>
+                    <div><span className="font-semibold text-slate-800">One Buy-In:</span> This version does not track rebuys separately.</div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <div className="text-sm font-semibold text-slate-900">Step 2 · Finish</div>
+                  <div className="mt-2 text-sm text-slate-600">Enter final results and close the session.</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
+                    <div><span className="font-semibold text-slate-800">Cash Out:</span> What you walk away with.</div>
+                    <div><span className="font-semibold text-slate-800">Out of Play:</span> Chips taken off the table during play.</div>
+                    <div><span className="font-semibold text-slate-800">Point Total:</span> Your casino total after session. The app uses the change from the previous total to calculate Session Points.</div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <div className="text-sm font-semibold text-slate-900">Step 3 · Edit</div>
+                  <div className="mt-2 text-sm text-slate-600">Edit or correct any session.</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
+                    <div>Edit numbers, time, and notes.</div>
+                    <div>Point totals automatically update forward.</div>
+                    <div>You can edit Cash Out, Out of Play, and Points directly in the table.</div>
+                    <div>Changes update instantly.</div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4 lg:col-span-2">
+                  <div className="text-sm font-semibold text-slate-900">Key Concepts</div>
+                  <div className="mt-3 grid gap-3 lg:grid-cols-2 text-sm text-slate-600 leading-relaxed">
+                    <div className="space-y-2">
+                      <div><span className="font-semibold text-slate-800">Win/Loss:</span> Cash Out + Out of Play - Buy-In.</div>
+                      <div><span className="font-semibold text-slate-800">Total:</span> Table-only result (excludes pocket).</div>
+                      <div><span className="font-semibold text-slate-800">Running:</span> Cumulative total over time.</div>
+                      <div><span className="font-semibold text-slate-800">Hours:</span> Actual play time.</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div><span className="font-semibold text-slate-800">Points:</span> Enter your casino total, the app calculates session points automatically.</div>
+                      <div>Example: 1000 → 1400 = 400 session points earned.</div>
+                      <div><span className="font-semibold text-slate-800">Per Location:</span> Bankroll and game type are saved.</div>
+                      <div><span className="font-semibold text-slate-800">Clear This Location:</span> Tap the 🎰 location badge in Sessions, then confirm.</div>
+                      <div><span className="font-semibold text-slate-800">Restore:</span> After clearing, you can restore the last cleared sessions or permanently discard that backup.</div>
+                      <div><span className="font-semibold text-slate-800">Sessions Table:</span> Header shows location; Type column shows the game. Restore actions appear here after a clear.</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
+                    <div className="text-sm font-semibold text-red-800">Advanced · Data Reset</div>
+                    <div className="mt-2 text-sm text-red-700">This starts a protected full reset for ALL sessions across all locations. Bankrolls and locations are preserved.</div>
+                    <div className="mt-3 text-sm text-red-700">Flow: Help → Clear All Sessions → Continue → final confirmation modal.</div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmClearAll(true);
+                          setShowHelp(false);
+                        }}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-red-600 px-4 text-sm font-semibold text-white"
+                      >
+                        Clear All Sessions
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
       </AnimatePresence>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">Session Edge</h1>
@@ -949,7 +969,7 @@ export default function App() {
               transition={{ duration: 0.12 }}
               type="button"
               onClick={() => setShowHelp(true)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition"
+              className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition"
             >
               ? Help
             </motion.button>
@@ -959,7 +979,7 @@ export default function App() {
               type="button"
               onClick={() => downloadCSV(completedSessions)}
               disabled={completedSessions.length === 0}
-              className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               Export CSV
@@ -968,8 +988,8 @@ export default function App() {
         </motion.div>
 
         <div className="w-[92%] max-w-md lg:w-full lg:max-w-none">
-        <div className="mb-5 grid gap-4 sm:gap-5 lg:grid-cols-[1.4fr_1fr]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+        <div className="mb-4 grid gap-3 sm:gap-3 lg:grid-cols-[1.4fr_1fr]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-base font-semibold text-slate-900">Casino / Location</div>
               <div className="text-xs text-slate-400">Active</div>
@@ -985,7 +1005,7 @@ export default function App() {
                     else setTripName(val);
                   }}
                   placeholder="Hard Rock Tampa / Vegas / Cruise"
-                  className="h-10 text-sm mt-0.5"
+                  className="h-9 text-sm mt-0.5"
                 />
               </div>
 
@@ -1023,20 +1043,20 @@ export default function App() {
                       value={renameTripValue}
                       onChange={(e) => setRenameTripValue(e.target.value)}
                       placeholder="Enter new location name"
-                      className="h-10 min-w-[220px] flex-1 text-sm"
+                      className="h-9 min-w-[220px] flex-1 text-sm"
                     />
                     <button
                       type="button"
                       onClick={confirmRenameTrip}
                       disabled={!renameTripValue.trim() || renameTripValue.trim() === tripName}
-                      className="inline-flex h-10 items-center rounded-2xl bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex h-9 items-center rounded-2xl bg-amber-600 px-4 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Save Name
                     </button>
                     <button
                       type="button"
                       onClick={cancelRenameTrip}
-                      className="inline-flex h-10 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex h-9 items-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     >
                       Cancel
                     </button>
@@ -1068,7 +1088,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold text-slate-900">Bankroll</div>
@@ -1080,7 +1100,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
               <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
                 Out of Pocket Bankroll
                 <span className="relative group cursor-pointer">
@@ -1099,7 +1119,7 @@ export default function App() {
                   value={startingBankroll}
                   onChange={(e) => setStartingBankroll(e.target.value)}
                   placeholder="e.g. 500"
-                  className="h-10 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
+                  className="h-9 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
                 />
 
                 {[100, 200, 500, 1000].map((amt) => (
@@ -1120,7 +1140,7 @@ export default function App() {
         </div>
 
         {openSessionWarning && (
-          <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+          <div className="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm">
             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-800">Active Session</div>
@@ -1134,7 +1154,7 @@ export default function App() {
                   const el = document.getElementById("finish-session-panel");
                   el?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-amber-100 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-200"
+                className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-amber-100 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-200"
               >
                 Open Session
               </button>
@@ -1142,15 +1162,15 @@ export default function App() {
           </div>
         )}
 
-        <div className="grid gap-4 lg:gap-5 xl:grid-cols-1">
-          <div className="grid w-full gap-4 justify-items-stretch lg:grid-cols-3">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+        <div className="grid gap-3 lg:gap-3 xl:grid-cols-1">
+          <div className="grid w-full gap-3 justify-items-stretch lg:grid-cols-3">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition">
               <div className="mb-3">
                 <div className="text-base font-semibold">Step 1 · Start Session</div>
                 <div className="text-sm text-slate-500">Enter your buy-in and start the session timer.</div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-2.5">
                 <Field label="Buy-In">
                   <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
                     <Input
@@ -1159,7 +1179,7 @@ export default function App() {
                       value={startForm.buyIn}
                       onChange={(e) => setStartForm((prev) => ({ ...prev, buyIn: e.target.value }))}
                       placeholder="e.g. 500"
-                      className="h-10 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
+                      className="h-9 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
                       disabled={!!activeSession}
                     />
 
@@ -1201,7 +1221,7 @@ export default function App() {
                     type="button"
                     onClick={startSession}
                     disabled={!!activeSession || !startForm.buyIn}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
                   >
                     <Play className="h-4 w-4" />
                     Start Session
@@ -1210,7 +1230,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setStartForm((p) => ({ ...p, buyIn: lastBuyIn }))}
-                      className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
                     >
                       Same Buy-In ({fmtCurrency(lastBuyIn)})
                     </button>
@@ -1219,7 +1239,7 @@ export default function App() {
                     type="button"
                     onClick={resetStartForm}
                     disabled={!!activeSession}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     <RotateCcw className="h-4 w-4" />
                     Clear Form
@@ -1228,7 +1248,7 @@ export default function App() {
               </div>
             </motion.div>
 
-            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition">
               <div className="mb-3">
                 <div className="text-base font-semibold">Step 2 · Finish Session</div>
                 <div className="text-sm text-slate-500">
@@ -1239,8 +1259,8 @@ export default function App() {
               {!activeSession ? (
                 <div className="rounded-3xl bg-slate-50 px-4 py-8 text-left text-slate-500">No active session right now.</div>
               ) : (
-                <div className="space-y-4">
-                  <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-md ring-1 ring-slate-800">
+                <div className="space-y-2.5">
+                  <div className="rounded-3xl bg-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Active Session</div>
@@ -1282,7 +1302,7 @@ export default function App() {
                           value={finishForm.cashOut}
                           onChange={(e) => setFinishForm((p) => ({ ...p, cashOut: e.target.value }))}
                           placeholder="0"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1293,7 +1313,7 @@ export default function App() {
                           value={finishForm.pocket}
                           onChange={(e) => setFinishForm((p) => ({ ...p, pocket: e.target.value }))}
                           placeholder="0"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1304,7 +1324,7 @@ export default function App() {
                           value={finishForm.pointTotal}
                           onChange={(e) => setFinishForm((p) => ({ ...p, pointTotal: e.target.value }))}
                           placeholder={String(previousPointTotal)}
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
                     </div>
@@ -1312,7 +1332,7 @@ export default function App() {
                     <div className="mt-2 text-xs text-slate-500">Based on previous total: {previousPointTotal}</div>
                   </div>
 
-                  <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-md ring-1 ring-slate-800">
+                  <div className="rounded-3xl bg-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
                     <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Win</div>
                     <div className={`text-3xl font-bold tracking-tight ${finishActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                       {fmtCurrency(finishActual)}
@@ -1334,7 +1354,7 @@ export default function App() {
                         transition={{ duration: 0.12 }}
                         type="button"
                         onClick={finishSession}
-                        className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
                       >
                         <Square className="h-4 w-4" />
                         Finish Session
@@ -1342,7 +1362,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={resetFinishForm}
-                        className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         <RotateCcw className="h-4 w-4" />
                         Reset Finish
@@ -1354,7 +1374,7 @@ export default function App() {
               )}
             </motion.div>
 
-            <motion.div id="edit-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+            <motion.div id="edit-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <div className="text-base font-semibold">Step 3 · Edit Session</div>
@@ -1374,7 +1394,7 @@ export default function App() {
               {!editingSessionId ? (
                 <div className="rounded-3xl bg-slate-50 px-4 py-8 text-left text-slate-500">Select a session from the table to edit.</div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-2.5">
                   <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
                     <div className="mb-3">
                       <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Edit Entry</div>
@@ -1389,7 +1409,7 @@ export default function App() {
                           value={editForm.initialBuyIn}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, initialBuyIn: e.target.value }))}
                           placeholder="e.g. 500"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1400,7 +1420,7 @@ export default function App() {
                           value={editForm.cashOut}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, cashOut: e.target.value }))}
                           placeholder="0"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1411,7 +1431,7 @@ export default function App() {
                           value={editForm.pocket}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, pocket: e.target.value }))}
                           placeholder="0"
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
                     </div>
@@ -1440,7 +1460,7 @@ export default function App() {
                             }))
                           }
                           placeholder={String(editingSessionId ? editingPreviousPointTotal : previousPointTotal)}
-                          className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                         />
                       </Field>
 
@@ -1452,7 +1472,7 @@ export default function App() {
                     <div className="mt-2 text-xs text-slate-500">Based on previous total: {editingPreviousPointTotal}</div>
                   </div>
 
-                  <div className="rounded-3xl bg-slate-900 p-5 text-white shadow-md ring-1 ring-slate-800">
+                  <div className="rounded-3xl bg-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
                     <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Win/Loss</div>
                     <div className={`text-3xl font-bold tracking-tight ${editActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                       {fmtCurrency(editActual)}
@@ -1470,7 +1490,7 @@ export default function App() {
                           setEditForm((prev) => ({ ...prev, startTime: e.target.value }));
                           setManualHours("");
                         }}
-                        className="h-10 w-auto min-w-[210px] text-sm"
+                        className="h-9 w-auto min-w-[210px] text-sm"
                       />
                     </Field>
                     <Field label="End Time">
@@ -1482,7 +1502,7 @@ export default function App() {
                           setEditForm((prev) => ({ ...prev, endTime: e.target.value }));
                           setManualHours("");
                         }}
-                        className="h-10 w-auto min-w-[210px] text-sm"
+                        className="h-9 w-auto min-w-[210px] text-sm"
                       />
                     </Field>
                   </div>
@@ -1495,7 +1515,7 @@ export default function App() {
                       value={manualHours}
                       onChange={(e) => setManualHours(e.target.value)}
                       placeholder="Optional manual override"
-                      className="h-10 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                      className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
                     />
                   </Field>
 
@@ -1521,7 +1541,7 @@ export default function App() {
                       transition={{ duration: 0.12 }}
                       type="button"
                       onClick={updateEditedSession}
-                      className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
                     >
                       <Pencil className="h-4 w-4" />
                       Update Session
@@ -1529,7 +1549,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={resetEditForm}
-                      className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     >
                       <RotateCcw className="h-4 w-4" />
                       Reset Edit
@@ -1540,11 +1560,11 @@ export default function App() {
             </motion.div>
           </div>
 
-          <div className="mb-5 w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-4 shadow-sm lg:max-w-none">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <div className="text-base font-semibold text-slate-900">Results Tracker</div>
-                <div className="text-sm text-slate-500">Your current performance for {tripName}.</div>
+                <div className="text-base font-semibold text-slate-900">Results</div>
+                <div className="text-sm text-slate-400">Performance for {tripName}</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
@@ -1569,20 +1589,28 @@ export default function App() {
         </div>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="text-lg font-semibold">Sessions</div>
-                  <div className="text-sm text-slate-500">Tap Completed or use the edit icon to modify a session.</div>
-                </div>
-                <div className="mt-1">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200 shadow-sm">
-                    <span className="text-sm">🎰</span>
-                    {tripName}
-                  </span>
-                </div>
+            <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-2.5 sm:px-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-lg font-semibold">Sessions</div>
+                
+              </div>
 
-                {lastClearedData && (
+              <div className="text-sm text-slate-400 max-w-sm">
+                Tap Completed or use the edit icon to edit.
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearLocation(true)}
+                  disabled={filteredSessions.length === 0}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200 shadow-sm hover:from-emerald-200 hover:to-emerald-100 active:scale-95 transition disabled:opacity-50"
+                >
+                  <span className="text-sm">🎰</span>
+                  {tripName}
+                </button>
+              </div>
+              {lastClearedData && (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <span className="text-sm font-medium text-amber-700">Last clear is available to restore.</span>
                     <button
@@ -1601,42 +1629,70 @@ export default function App() {
                     </button>
                   </div>
                 )}
-              </div>
-              {confirmClearAll ? (
+              {confirmClearLocation ? (
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={clearAll}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-red-600 px-4 text-sm font-semibold text-white"
+                    onClick={() => {
+                      clearCurrentLocation();
+                      setConfirmClearLocation(false);
+                    }}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-amber-600 px-4 text-sm font-semibold text-white"
                   >
-                    Confirm Delete All
+                    Confirm Clear {tripName}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setConfirmClearAll(false)}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    onClick={() => setConfirmClearLocation(false)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
                     Cancel
                   </button>
                 </div>
-              ) : (
+              ) : confirmClearAll ? (
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={clearCurrentLocation}
-                    disabled={filteredSessions.length === 0}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                    onClick={() => setConfirmClearAllFinal(true)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-red-600 px-4 text-sm font-semibold text-white"
                   >
-                    Clear This Location
+                    Continue
                   </button>
                   <button
                     type="button"
-                    onClick={() => setConfirmClearAll(true)}
-                    disabled={sessions.length === 0}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    onClick={() => setConfirmClearAll(false)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
-                    Clear All
+                    Cancel
                   </button>
+                </div>
+              ) : null}
+
+              {confirmClearAllFinal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                  <div className="w-full max-w-sm rounded-3xl bg-white p-4 shadow-xl">
+                    <div className="text-lg font-semibold text-slate-900">Final confirmation</div>
+                    <div className="mt-2 text-sm text-slate-600">This will permanently delete ALL sessions across all locations. This cannot be undone.</div>
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearAll();
+                          setConfirmClearAllFinal(false);
+                        }}
+                        className="flex-1 rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white"
+                      >
+                        Delete Everything
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmClearAllFinal(false)}
+                        className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
