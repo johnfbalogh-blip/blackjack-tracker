@@ -1142,7 +1142,7 @@ export default function App() {
         )}
 
         <div className="grid gap-4 lg:gap-5 xl:grid-cols-1">
-          <div className="grid gap-4 sm:max-w-md sm:mx-auto lg:max-w-none lg:grid-cols-3">
+          <div className="grid w-full max-w-md gap-4 mx-auto lg:max-w-none lg:grid-cols-3">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-4">
                 <div className="text-base font-semibold">Step 1 · Start Session</div>
