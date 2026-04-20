@@ -227,7 +227,7 @@ function SmallStat({
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.99 }}
       transition={{ duration: 0.15 }}
-      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+      className="h-16 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm flex flex-col justify-center"
     >
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
         <Icon className="h-4 w-4" />
@@ -967,7 +967,7 @@ export default function App() {
           </div>
         </motion.div>
 
-        <div className="mb-6 grid w-full max-w-md gap-4 sm:gap-5 lg:max-w-none lg:grid-cols-[1.4fr_1fr]">
+        <div className="mb-5 grid w-full max-w-md gap-4 sm:gap-5 lg:max-w-none lg:grid-cols-[1.4fr_1fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-base font-semibold text-slate-900">Casino / Location</div>
@@ -1119,7 +1119,7 @@ export default function App() {
         </div>
 
         {openSessionWarning && (
-          <div className="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+          <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-800">Active Session</div>
@@ -1142,9 +1142,9 @@ export default function App() {
         )}
 
         <div className="w-full max-w-md grid gap-4 lg:max-w-none lg:gap-5 xl:grid-cols-1">
-          <div className="grid w-full max-w-md gap-4 lg:max-w-none lg:grid-cols-3">
+          <div className="grid w-full gap-4 lg:grid-cols-3">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="text-base font-semibold">Step 1 · Start Session</div>
                 <div className="text-sm text-slate-500">Enter your buy-in and start the session timer.</div>
               </div>
@@ -1200,7 +1200,7 @@ export default function App() {
                     type="button"
                     onClick={startSession}
                     disabled={!!activeSession || !startForm.buyIn}
-                    className="inline-flex h-11 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
                   >
                     <Play className="h-4 w-4" />
                     Start Session
@@ -1209,7 +1209,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setStartForm((p) => ({ ...p, buyIn: lastBuyIn }))}
-                      className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+                      className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
                     >
                       Same Buy-In ({fmtCurrency(lastBuyIn)})
                     </button>
@@ -1218,7 +1218,7 @@ export default function App() {
                     type="button"
                     onClick={resetStartForm}
                     disabled={!!activeSession}
-                    className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     <RotateCcw className="h-4 w-4" />
                     Clear Form
@@ -1228,7 +1228,7 @@ export default function App() {
             </motion.div>
 
             <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="text-base font-semibold">Step 2 · Finish Session</div>
                 <div className="text-sm text-slate-500">
                   {activeSession ? "Enter your results and finish the session." : "Start a session first to unlock this section."}
@@ -1333,7 +1333,7 @@ export default function App() {
                         transition={{ duration: 0.12 }}
                         type="button"
                         onClick={finishSession}
-                        className="inline-flex h-11 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                        className="inline-flex h-10 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
                       >
                         <Square className="h-4 w-4" />
                         Finish Session
@@ -1341,7 +1341,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={resetFinishForm}
-                        className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         <RotateCcw className="h-4 w-4" />
                         Reset Finish
@@ -1520,7 +1520,7 @@ export default function App() {
                       transition={{ duration: 0.12 }}
                       type="button"
                       onClick={updateEditedSession}
-                      className="inline-flex h-11 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                      className="inline-flex h-10 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
                     >
                       <Pencil className="h-4 w-4" />
                       Update Session
@@ -1528,7 +1528,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={resetEditForm}
-                      className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     >
                       <RotateCcw className="h-4 w-4" />
                       Reset Edit
