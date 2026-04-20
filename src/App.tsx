@@ -967,7 +967,7 @@ export default function App() {
           </div>
         </motion.div>
 
-        <div className="mb-6 grid gap-4 sm:gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <div className="mb-6 grid w-full max-w-md gap-4 sm:gap-5 lg:max-w-none lg:grid-cols-[1.4fr_1fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
             <div className="mb-4 flex items-center justify-between">
               <div className="text-base font-semibold text-slate-900">Casino / Location</div>
