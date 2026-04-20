@@ -238,7 +238,7 @@ function SmallStat({
   );
 }
 
-// 🔒 HARD SAVED VERSION 2.4 - FINAL LOCKED (WIDTH + RHYTHM + POLISH COMPLETE)
+// 🔒 HARD SAVED VERSION 2.4 - FINAL LOCKED (UNIFIED WIDTH FIX APPLIED)
 // Do not modify core logic without version bump
 export default function App() {
   // 🔹 NEW: Trip tracking
@@ -1571,14 +1571,17 @@ export default function App() {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
               <div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <div className="text-lg font-semibold">Sessions</div>
+                  <div className="text-sm text-slate-500">Tap Completed or use the edit icon to modify a session.</div>
+                </div>
+                <div className="mt-1">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200 shadow-sm">
                     <span className="text-sm">🎰</span>
                     {tripName}
                   </span>
                 </div>
-                <div className="text-sm text-slate-500">Tap Completed or use the edit icon to modify a session.</div>
+
                 {lastClearedData && (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <span className="text-sm font-medium text-amber-700">Last clear is available to restore.</span>
