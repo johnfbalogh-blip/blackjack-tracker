@@ -229,8 +229,8 @@ function SmallStat({
       transition={{ duration: 0.15 }}
       className="h-16 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm flex flex-col justify-center"
     >
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-        <Icon className="h-4 w-4" />
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <Icon className="h-4 w-4 shrink-0" />
         {label}
       </div>
       <div className={`text-base font-semibold ${toneClass}`}>{value}</div>
@@ -238,7 +238,7 @@ function SmallStat({
   );
 }
 
-// 🔒 HARD SAVED VERSION 2.4 - FINAL STABLE CHECKPOINT (LATEST SAVE)
+// 🔒 HARD SAVED VERSION 2.4 - FINAL LOCKED (WIDTH + RHYTHM + POLISH COMPLETE)
 // Do not modify core logic without version bump
 export default function App() {
   // 🔹 NEW: Trip tracking
@@ -853,7 +853,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setShowHelp(false)}
-                className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Close
               </button>
@@ -943,13 +943,13 @@ export default function App() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
             <motion.button
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.12 }}
               type="button"
               onClick={() => setShowHelp(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition"
+              className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition"
             >
               ? Help
             </motion.button>
@@ -959,7 +959,7 @@ export default function App() {
               type="button"
               onClick={() => downloadCSV(completedSessions)}
               disabled={completedSessions.length === 0}
-              className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               Export CSV
@@ -989,7 +989,7 @@ export default function App() {
               </div>
 
               {availableTrips.length > 0 && (
-                <div className="flex flex-wrap gap-2 sm:gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
                   {availableTrips.map((trip) => (
                     <button
                       key={trip}
@@ -1017,7 +1017,7 @@ export default function App() {
                   <div className="mb-2 text-sm text-amber-900">
                     Renaming <span className="font-semibold">{tripName}</span>. This will update all sessions for this location.
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Input
                       value={renameTripValue}
                       onChange={(e) => setRenameTripValue(e.target.value)}
@@ -1045,7 +1045,7 @@ export default function App() {
 
               <div>
                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Type</div>
-                <div className="flex flex-wrap gap-2 sm:gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
                   {["Blackjack", "Ultimate", "3 Card", "Slots", "Other"].map((type) => (
                     <button
                       key={type}
@@ -1080,7 +1080,7 @@ export default function App() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
                 Out of Pocket Bankroll
                 <span className="relative group cursor-pointer">
                   <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">?</span>
@@ -1091,7 +1091,7 @@ export default function App() {
               </div>
               <div className="mb-3 text-xs text-slate-500">Stored per location.</div>
 
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <Input
                   type="number"
                   inputMode="decimal"
@@ -1120,7 +1120,7 @@ export default function App() {
 
         {openSessionWarning && (
           <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-800">Active Session</div>
                 <div className="text-sm text-amber-900">
@@ -1133,7 +1133,7 @@ export default function App() {
                   const el = document.getElementById("finish-session-panel");
                   el?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className="inline-flex h-10 items-center gap-2 rounded-2xl bg-amber-100 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-200"
+                className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-amber-100 px-4 text-sm font-semibold text-amber-900 hover:bg-amber-200"
               >
                 Open Session
               </button>
@@ -1142,8 +1142,8 @@ export default function App() {
         )}
 
         <div className="w-full max-w-md grid gap-4 lg:max-w-none lg:gap-5 xl:grid-cols-1">
-          <div className="grid w-full gap-4 lg:grid-cols-3">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+          <div className="grid w-full justify-items-start gap-4 lg:grid-cols-3">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition lg:max-w-none">
               <div className="mb-3">
                 <div className="text-base font-semibold">Step 1 · Start Session</div>
                 <div className="text-sm text-slate-500">Enter your buy-in and start the session timer.</div>
@@ -1151,7 +1151,7 @@ export default function App() {
 
               <div className="space-y-4">
                 <Field label="Buy-In">
-                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
                     <Input
                       type="number"
                       inputMode="decimal"
@@ -1193,14 +1193,14 @@ export default function App() {
                   </div>
                 </Field>
 
-                <div className="flex flex-wrap gap-2 sm:gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
                   <motion.button
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.12 }}
                     type="button"
                     onClick={startSession}
                     disabled={!!activeSession || !startForm.buyIn}
-                    className="inline-flex h-10 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
                   >
                     <Play className="h-4 w-4" />
                     Start Session
@@ -1209,7 +1209,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setStartForm((p) => ({ ...p, buyIn: lastBuyIn }))}
-                      className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+                      className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
                     >
                       Same Buy-In ({fmtCurrency(lastBuyIn)})
                     </button>
@@ -1218,7 +1218,7 @@ export default function App() {
                     type="button"
                     onClick={resetStartForm}
                     disabled={!!activeSession}
-                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     <RotateCcw className="h-4 w-4" />
                     Clear Form
@@ -1227,7 +1227,7 @@ export default function App() {
               </div>
             </motion.div>
 
-            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition lg:max-w-none">
               <div className="mb-3">
                 <div className="text-base font-semibold">Step 2 · Finish Session</div>
                 <div className="text-sm text-slate-500">
@@ -1327,13 +1327,13 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 sm:gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
                       <motion.button
                         whileTap={{ scale: 0.98 }}
                         transition={{ duration: 0.12 }}
                         type="button"
                         onClick={finishSession}
-                        className="inline-flex h-10 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                        className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
                       >
                         <Square className="h-4 w-4" />
                         Finish Session
@@ -1341,7 +1341,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={resetFinishForm}
-                        className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         <RotateCcw className="h-4 w-4" />
                         Reset Finish
@@ -1353,7 +1353,7 @@ export default function App() {
               )}
             </motion.div>
 
-            <motion.div id="edit-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+            <motion.div id="edit-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition lg:max-w-none">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <div className="text-base font-semibold">Step 3 · Edit Session</div>
@@ -1499,7 +1499,7 @@ export default function App() {
                   </Field>
 
                   <Field label="Notes">
-                    <div className="mb-2 flex flex-wrap gap-2">
+                    <div className="mb-2 flex flex-wrap gap-1.5">
                       {["Good run", "Tired", "Drinks", "Mistakes"].map((tag) => (
                         <button key={tag} type="button" onClick={() => setEditForm((p) => ({ ...p, notes: p.notes ? p.notes + ", " + tag : tag }))} className="px-3 py-1 rounded-full bg-slate-200 text-xs font-semibold">
                           {tag}
@@ -1514,13 +1514,13 @@ export default function App() {
                     />
                   </Field>
 
-                  <div className="flex flex-wrap gap-2 sm:gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
                     <motion.button
                       whileTap={{ scale: 0.98 }}
                       transition={{ duration: 0.12 }}
                       type="button"
                       onClick={updateEditedSession}
-                      className="inline-flex h-10 items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                      className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
                     >
                       <Pencil className="h-4 w-4" />
                       Update Session
@@ -1528,7 +1528,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={resetEditForm}
-                      className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     >
                       <RotateCcw className="h-4 w-4" />
                       Reset Edit
@@ -1539,14 +1539,14 @@ export default function App() {
             </motion.div>
           </div>
 
-          <div className="mb-5 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:max-w-none">
+          <div className="mb-5 w-full max-w-md justify-self-start rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:max-w-none">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <div className="text-base font-semibold text-slate-900">Results Tracker</div>
                 <div className="text-sm text-slate-500">Your current performance for {tripName}.</div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
               <SmallStat icon={Wallet} label="Bankroll" value={fmtCurrency(summary.bankroll)} />
               <SmallStat
                 icon={summary.totalActual >= 0 ? TrendingUp : TrendingDown}
@@ -1568,7 +1568,7 @@ export default function App() {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <div className="text-lg font-semibold">Sessions</div>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200 shadow-sm">
                     <span className="text-sm">🎰</span>
@@ -1577,19 +1577,19 @@ export default function App() {
                 </div>
                 <div className="text-sm text-slate-500">Tap Completed or use the edit icon to modify a session.</div>
                 {lastClearedData && (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <span className="text-sm font-medium text-amber-700">Last clear is available to restore.</span>
                     <button
                       type="button"
                       onClick={restoreLastCleared}
-                      className="inline-flex h-9 items-center gap-2 rounded-2xl bg-amber-100 px-3 text-sm font-semibold text-amber-800 hover:bg-amber-200"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-amber-100 px-3 text-sm font-semibold text-amber-800 hover:bg-amber-200"
                     >
                       Restore Last Clear
                     </button>
                     <button
                       type="button"
                       onClick={discardLastCleared}
-                      className="inline-flex h-9 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     >
                       Permanently Clear
                     </button>
@@ -1597,29 +1597,29 @@ export default function App() {
                 )}
               </div>
               {confirmClearAll ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="inline-flex h-10 items-center gap-2 rounded-2xl bg-red-600 px-4 text-sm font-semibold text-white"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl bg-red-600 px-4 text-sm font-semibold text-white"
                   >
                     Confirm Delete All
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmClearAll(false)}
-                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
                     Cancel
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={clearCurrentLocation}
                     disabled={filteredSessions.length === 0}
-                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
                   >
                     Clear This Location
                   </button>
@@ -1627,7 +1627,7 @@ export default function App() {
                     type="button"
                     onClick={() => setConfirmClearAll(true)}
                     disabled={sessions.length === 0}
-                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     Clear All
                   </button>
@@ -1761,7 +1761,7 @@ export default function App() {
                           </td>
                           <td className="px-2 py-2 align-middle text-right whitespace-nowrap tabular-nums">{session.status === "completed" ? (session.pointsEarned ?? "—") : "—"}</td>
                           <td className="px-2 py-2 align-middle text-left">
-                            <div className="flex justify-center gap-2">
+                            <div className="flex justify-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => editSession(session)}
