@@ -1141,8 +1141,8 @@ export default function App() {
           </div>
         )}
 
-        <div className="w-[92%] max-w-md grid gap-4 lg:w-full lg:max-w-none lg:gap-5 xl:grid-cols-1">
-          <div className="grid w-full gap-4 lg:grid-cols-3">
+        <div className="w-[92%] max-w-md justify-self-start grid gap-4 lg:w-full lg:max-w-none lg:gap-5 xl:grid-cols-1">
+          <div className="grid w-full gap-4 justify-items-stretch lg:grid-cols-3">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
               <div className="mb-3">
                 <div className="text-base font-semibold">Step 1 · Start Session</div>
@@ -1539,7 +1539,7 @@ export default function App() {
             </motion.div>
           </div>
 
-          <div className="mb-5 w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-5 w-full justify-self-start rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <div className="text-base font-semibold text-slate-900">Results Tracker</div>
