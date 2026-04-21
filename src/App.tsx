@@ -189,7 +189,7 @@ function downloadCSV(rows: Session[]) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-2">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
       {children}
     </label>
   );
@@ -227,7 +227,7 @@ function SmallStat({
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.99 }}
       transition={{ duration: 0.15 }}
-      className="h-16 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm flex flex-col justify-center"
+      className="h-16 rounded-2xl border border-slate-200 bg-white px-4 py-2 shadow-sm flex flex-col justify-center"
     >
       <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
         <Icon className="h-4 w-4 shrink-0" />
@@ -239,7 +239,9 @@ function SmallStat({
 }
 
 // 🔒 HARD SAVED VERSION 2.4 - FINAL LOCKED (WIDTH + HEADER + ALIGNMENT COMPLETE)
-// Do not modify core logic without version bump
+// ✅ V2.4 FINAL — Step 2 polished, Session Result optimized (Buy In vs Cash Out), UI stable
+// ✅ Snapshot confirmed: layout, spacing, result box, and actions fully refined
+// 🚫 Do not modify core logic without version bump
 export default function App() {
   // 🔹 NEW: Trip tracking
   const [tripName, setTripName] = useState(() => {
@@ -856,7 +858,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowHelp(false)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   Close
                 </button>
@@ -963,7 +965,7 @@ export default function App() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             <motion.button
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.12 }}
@@ -995,7 +997,7 @@ export default function App() {
               <div className="text-xs text-slate-400">Active</div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <div>
                 <Input
                   value={tripName}
@@ -1094,7 +1096,7 @@ export default function App() {
                 <div className="text-sm font-semibold text-slate-900">Bankroll</div>
                 <div className="text-xs text-slate-400">Per Location</div>
               </div>
-              <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-right ring-1 ring-emerald-100">
+              <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-center ring-1 ring-emerald-100">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Current</div>
                 <div className="text-base font-semibold text-emerald-600">{fmtCurrency(summary.bankroll)}</div>
               </div>
@@ -1119,7 +1121,7 @@ export default function App() {
                   value={startingBankroll}
                   onChange={(e) => setStartingBankroll(e.target.value)}
                   placeholder="e.g. 500"
-                  className="h-9 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
+                  className="h-9 w-20 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                 />
 
                 {[100, 200, 500, 1000].map((amt) => (
@@ -1140,7 +1142,7 @@ export default function App() {
         </div>
 
         {openSessionWarning && (
-          <div className="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm">
+          <div className="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-2 shadow-sm">
             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-800">Active Session</div>
@@ -1170,7 +1172,7 @@ export default function App() {
                 <div className="text-sm text-slate-500">Enter your buy-in and start the session timer.</div>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 <Field label="Buy-In">
                   <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
                     <Input
@@ -1179,7 +1181,7 @@ export default function App() {
                       value={startForm.buyIn}
                       onChange={(e) => setStartForm((prev) => ({ ...prev, buyIn: e.target.value }))}
                       placeholder="e.g. 500"
-                      className="h-9 w-20 sm:w-24 text-base font-semibold text-left flex-shrink-0"
+                      className="h-9 w-20 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                       disabled={!!activeSession}
                     />
 
@@ -1205,7 +1207,7 @@ export default function App() {
                           onPointerLeave={handleBuyInPointerLeave}
                           onContextMenu={(e) => e.preventDefault()}
                           disabled={!!activeSession}
-                          className="rounded-xl bg-slate-900 text-white px-3 py-2 text-sm font-semibold shadow hover:bg-slate-800 transition disabled:opacity-50"
+                          className="h-9 w-20 rounded-xl bg-slate-900 text-white text-sm font-semibold shadow hover:bg-slate-800 transition disabled:opacity-50 flex items-center justify-center"
                         >
                           +{amount}
                         </button>
@@ -1214,27 +1216,30 @@ export default function App() {
                   </div>
                 </Field>
 
-                <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ duration: 0.12 }}
-                    type="button"
-                    onClick={startSession}
-                    disabled={!!activeSession || !startForm.buyIn}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
-                  >
-                    <Play className="h-4 w-4" />
-                    Start Session
-                  </motion.button>
-                  {lastBuyIn && !activeSession && (
-                    <button
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:gap-1.5">
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.12 }}
                       type="button"
-                      onClick={() => setStartForm((p) => ({ ...p, buyIn: lastBuyIn }))}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+                      onClick={startSession}
+                      disabled={!!activeSession || !startForm.buyIn}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
                     >
-                      Same Buy-In ({fmtCurrency(lastBuyIn)})
-                    </button>
-                  )}
+                      <Play className="h-4 w-4" />
+                      Start Session
+                    </motion.button>
+                    {lastBuyIn && !activeSession && (
+                      <button
+                        type="button"
+                        onClick={() => setStartForm((p) => ({ ...p, buyIn: lastBuyIn }))}
+                        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+                      >
+                        Same Buy-In ({fmtCurrency(lastBuyIn)})
+                      </button>
+                    )}
+                  </div>
+
                   <button
                     type="button"
                     onClick={resetStartForm}
@@ -1248,53 +1253,51 @@ export default function App() {
               </div>
             </motion.div>
 
-            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition">
-              <div className="mb-3">
-                <div className="text-base font-semibold">Step 2 · Finish Session</div>
+            <motion.div id="finish-session-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="w-full rounded-3xl border border-slate-200 bg-white p-3.5 shadow-sm hover:shadow-md transition">
+              <div className="mb-2.5">
+                <div className="text-base font-semibold">Step 2 · End Session</div>
                 <div className="text-sm text-slate-500">
                   {activeSession ? "Enter your results and finish the session." : "Start a session first to unlock this section."}
                 </div>
               </div>
 
               {!activeSession ? (
-                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-left text-slate-500">No active session right now.</div>
+                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-center text-slate-500">No active session right now.</div>
               ) : (
-                <div className="space-y-2.5">
-                  <div className="rounded-3xl bg-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Active Session</div>
-                        <div className="text-xl font-bold">{activeSession?.location || "—"}</div>
-                        <div className="text-sm text-slate-300">{activeSession.game}</div>
+                <div className="space-y-3">
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
+                    <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_right,white,transparent_60%)] opacity-10" />
+
+                    <div className="relative mb-2 flex items-center justify-between gap-2.5">
+                      <div className="flex flex-col">
+                        <div className="text-lg font-semibold leading-tight text-white">
+                          {activeSession?.location || "Active Session Timer"}
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <div className="text-xs uppercase tracking-[0.16em] text-slate-300">Live Timer</div>
-                        <div className="text-2xl font-bold tracking-wide">{activeElapsed}</div>
+
+                      <div className="flex flex-col items-end">
+                        <div className="text-xl font-bold tracking-wide tabular-nums text-white">
+                          {activeElapsed}
+                        </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3 sm:grid-cols-3">
-                      <div>
-                        <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Buy</div>
-                        <div className="text-base font-semibold">{fmtCurrency(finishTotalBuyIn)}</div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2.5 border-t border-white/10 pt-3 text-xs text-slate-400">
+                      <div className="rounded-2xl bg-white/5 px-2 py-2 text-center ring-1 ring-white/10">
+                        <div className="uppercase tracking-[0.12em]">Buy In</div>
+                        <div className="mt-1 text-sm font-semibold text-white tabular-nums">{fmtCurrency(finishTotalBuyIn)}</div>
                       </div>
-                      <div>
-                        <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Type</div>
-                        <div className="text-base font-semibold">{activeSession.game}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Hours</div>
-                        <div className="text-base font-semibold">{activeHours.toFixed(2)}</div>
+
+                      <div className="rounded-2xl bg-white/5 px-2 py-2 text-center ring-1 ring-white/10">
+                        <div className="uppercase tracking-[0.12em]">Play Time</div>
+                        <div className="mt-1 text-sm font-semibold text-white tabular-nums">{activeHours.toFixed(2)}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                    <div className="mb-2">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Session Entry</div>
-                      <div className="text-lg font-bold text-slate-900">Cash Out · Out of Play · Points</div>
-                    </div>
+                  <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-3.5">
 
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <Field label="Cash Out">
                         <Input
                           type="number"
@@ -1302,7 +1305,7 @@ export default function App() {
                           value={finishForm.cashOut}
                           onChange={(e) => setFinishForm((p) => ({ ...p, cashOut: e.target.value }))}
                           placeholder="0"
-                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-8 w-24 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                         />
                       </Field>
 
@@ -1313,7 +1316,7 @@ export default function App() {
                           value={finishForm.pocket}
                           onChange={(e) => setFinishForm((p) => ({ ...p, pocket: e.target.value }))}
                           placeholder="0"
-                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-8 w-24 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                         />
                       </Field>
 
@@ -1324,7 +1327,7 @@ export default function App() {
                           value={finishForm.pointTotal}
                           onChange={(e) => setFinishForm((p) => ({ ...p, pointTotal: e.target.value }))}
                           placeholder={String(previousPointTotal)}
-                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-8 w-24 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                         />
                       </Field>
                     </div>
@@ -1332,32 +1335,46 @@ export default function App() {
                     <div className="mt-2 text-xs text-slate-500">Based on previous total: {previousPointTotal}</div>
                   </div>
 
-                  <div className="rounded-3xl bg-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Win</div>
-                    <div className={`text-3xl font-bold tracking-tight ${finishActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                      {fmtCurrency(finishActual)}
-                    </div>
-                    <div className="mt-2 text-sm text-slate-300">Cash Out + Out of Play - Buy-In</div>
-                  </div>
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_left,white,transparent_60%)] pointer-events-none" />
+                    <div className={`absolute inset-y-0 left-0 w-1 ${finishActual >= 0 ? "bg-emerald-400/80" : "bg-red-400/80"}`} />
 
-                  <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                    <div className="mb-3 flex items-center justify-between">
+                    <div className="relative flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Finalize</div>
-                        <div className="text-lg font-bold text-slate-900">Save Session</div>
+                        <div className="text-lg font-semibold leading-tight text-white">
+                          Session Result
+                        </div>
+                        
+                      </div>
+                      <div className={`text-xl font-bold tracking-wide tabular-nums drop-shadow-sm ${finishActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        {finishActual > 0 ? "+" : ""}{fmtCurrency(finishActual)}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
+                    <div className="mt-3 grid grid-cols-2 gap-2.5 border-t border-white/10 pt-3 text-xs text-slate-400">
+                      <div className="rounded-2xl bg-white/5 px-2 py-2 text-center ring-1 ring-white/10">
+                        <div className="uppercase tracking-[0.12em]">Buy In</div>
+                        <div className="mt-1 text-sm font-semibold text-white tabular-nums">{fmtCurrency(finishTotalBuyIn)}</div>
+                      </div>
+
+                      <div className="rounded-2xl bg-white/5 px-2 py-2 text-center ring-1 ring-white/10">
+                        <div className="uppercase tracking-[0.12em]">Cash Out</div>
+                        <div className="mt-1 text-sm font-semibold text-white tabular-nums">{fmtCurrency(finishForm.cashOut || 0)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-3">
+                    <div className="flex flex-wrap items-center justify-start gap-2">
                       <motion.button
                         whileTap={{ scale: 0.98 }}
                         transition={{ duration: 0.12 }}
                         type="button"
                         onClick={finishSession}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                        className="inline-flex h-11 w-full sm:w-auto justify-center items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-8 text-base font-semibold text-white shadow-md hover:shadow-lg transition"
                       >
                         <Square className="h-4 w-4" />
-                        Finish Session
+                        End Session
                       </motion.button>
                       <button
                         type="button"
@@ -1368,7 +1385,6 @@ export default function App() {
                         Reset Finish
                       </button>
                     </div>
-                    <div className="mt-2 text-xs text-slate-500">Saves and closes session.</div>
                   </div>
                 </div>
               )}
@@ -1392,16 +1408,13 @@ export default function App() {
               </div>
 
               {!editingSessionId ? (
-                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-left text-slate-500">Select a session from the table to edit.</div>
+                <div className="rounded-3xl bg-slate-50 px-4 py-8 text-center text-slate-500">Select a session from the table to edit.</div>
               ) : (
-                <div className="space-y-2.5">
-                  <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                    <div className="mb-3">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Edit Entry</div>
-                      <div className="text-lg font-bold text-slate-900">Session Totals</div>
-                    </div>
+                <div className="space-y-3">
+                  <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-3.5">
+                    
 
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <Field label="Buy-In">
                         <Input
                           type="number"
@@ -1409,7 +1422,7 @@ export default function App() {
                           value={editForm.initialBuyIn}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, initialBuyIn: e.target.value }))}
                           placeholder="e.g. 500"
-                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-8 w-24 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                         />
                       </Field>
 
@@ -1420,7 +1433,7 @@ export default function App() {
                           value={editForm.cashOut}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, cashOut: e.target.value }))}
                           placeholder="0"
-                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-8 w-24 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                         />
                       </Field>
 
@@ -1431,19 +1444,16 @@ export default function App() {
                           value={editForm.pocket}
                           onChange={(e) => setEditForm((prev) => ({ ...prev, pocket: e.target.value }))}
                           placeholder="0"
-                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-8 w-24 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                         />
                       </Field>
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                    <div className="mb-2">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Casino Tracking</div>
-                      <div className="text-lg font-bold text-slate-900">Point Total</div>
-                    </div>
+                  <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-3.5">
+                    
 
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <Field label="Current Total">
                         <Input
                           type="number"
@@ -1460,7 +1470,7 @@ export default function App() {
                             }))
                           }
                           placeholder={String(editingSessionId ? editingPreviousPointTotal : previousPointTotal)}
-                          className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                          className="h-8 w-24 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                         />
                       </Field>
 
@@ -1472,15 +1482,17 @@ export default function App() {
                     <div className="mt-2 text-xs text-slate-500">Based on previous total: {editingPreviousPointTotal}</div>
                   </div>
 
-                  <div className="rounded-3xl bg-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Win/Loss</div>
-                    <div className={`text-3xl font-bold tracking-tight ${editActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                      {fmtCurrency(editActual)}
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_left,white,transparent_60%)] pointer-events-none" />
+                    <div className="relative flex items-center justify-between">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Session Result</div>
+                      <div className={`text-xl font-bold tracking-wide tabular-nums ${editActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        {fmtCurrency(editActual)}
+                      </div>
                     </div>
-                    <div className="mt-2 text-sm text-slate-300">Based on edited buy-in, cash-out, and Out of Play.</div>
                   </div>
 
-                  <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <Field label="Start Time">
                       <Input
                         type="datetime-local"
@@ -1515,7 +1527,7 @@ export default function App() {
                       value={manualHours}
                       onChange={(e) => setManualHours(e.target.value)}
                       placeholder="Optional manual override"
-                      className="h-9 w-24 sm:w-28 text-base font-semibold text-left flex-shrink-0"
+                      className="h-8 w-24 sm:w-24 text-base font-semibold text-center flex-shrink-0"
                     />
                   </Field>
 
@@ -1541,7 +1553,7 @@ export default function App() {
                       transition={{ duration: 0.12 }}
                       type="button"
                       onClick={updateEditedSession}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-5 text-sm font-semibold text-white shadow transition hover:shadow-md"
+                      className="inline-flex h-10 w-full sm:w-auto justify-center items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-6 text-base font-semibold text-white shadow-md hover:shadow-lg transition"
                     >
                       <Pencil className="h-4 w-4" />
                       Update Session
@@ -1589,7 +1601,7 @@ export default function App() {
         </div>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-2.5 sm:px-5">
+            <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-2 sm:px-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-lg font-semibold">Sessions</div>
                 
@@ -1698,26 +1710,26 @@ export default function App() {
             </div>
 
             {filteredSessions.length === 0 ? (
-              <div className="px-5 py-12 text-left text-slate-500">No sessions yet. Start your first session to begin tracking.</div>
+              <div className="px-5 py-12 text-center text-slate-500">No sessions yet. Start your first session to begin tracking.</div>
             ) : (
               <div className="overflow-x-auto rounded-b-3xl">
                 <div className="text-[10px] text-slate-400 px-2 pb-1 sm:hidden">Swipe to view →</div>
-                <table className="min-w-full text-xs border-separate border-spacing-y-1 [font-variant-numeric:tabular-nums]">
+                <table className="min-w-full text-[11px] border-separate border-spacing-y-0.5 text-center [font-variant-numeric:tabular-nums]">
                   <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-[0.16em] text-slate-500">
                     <tr>
-                      <th className="px-2 py-2 font-semibold w-24">Status</th>
-                      <th className="px-2 py-2 font-semibold w-28">Date</th>
-                      <th className="px-2 py-2 font-semibold text-right w-20">Buy</th>
-                      <th className="px-2 py-2 font-semibold text-right w-20">Cash Out</th>
-                      <th className="px-2 py-2 font-semibold text-right w-20">Out of Play</th>
-                      <th className="px-2 py-2 font-semibold text-right w-24">Win</th>
-                      <th className="px-2 py-2 font-semibold text-right w-28">Total</th>
-                      <th className="px-2 py-2 font-semibold text-right w-28">Running</th>
-                      <th className="px-2 py-2 font-semibold text-right w-20">Hours</th>
-                      <th className="px-2 py-2 font-semibold text-right w-20">Points</th>
-                      <th className="px-2 py-2 font-semibold text-right w-20">Session</th>
-                      <th className="px-2 py-2 font-semibold w-20"></th>
-                      <th className="px-2 py-2 font-semibold text-left w-[90px] whitespace-normal leading-tight">Type</th>
+                      <th className="px-2 py-1 font-semibold w-20 text-center">Status</th>
+                      <th className="px-2 py-1 font-semibold w-28">Date</th>
+                      <th className="px-2 py-1 font-semibold text-center w-18">Buy In</th>
+                      <th className="px-2 py-1 font-semibold text-center w-18">Cash Out</th>
+                      <th className="px-2 py-1 font-semibold text-center w-18">Out of Play</th>
+                      <th className="px-2 py-1 font-semibold text-center w-28">Win</th>
+                      <th className="px-2 py-1 font-semibold text-center w-32">Total</th>
+                      <th className="px-2 py-1 font-semibold text-center w-32">Running</th>
+                      <th className="px-2 py-1 font-semibold text-center w-18">Hours</th>
+                      <th className="px-2 py-1 font-semibold text-center w-18">Points</th>
+                      <th className="px-2 py-1 font-semibold text-center w-18">Session</th>
+                      <th className="px-2 py-1 font-semibold w-20"></th>
+                      <th className="px-2 py-1 font-semibold text-center w-[90px] text-slate-400 text-[10px]">Notes</th>
                     </tr>
                   </thead>
                   <tbody className="[&>tr]:align-middle">
@@ -1727,7 +1739,7 @@ export default function App() {
 
                       return (
                         <tr key={session.id} className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-100 hover:shadow-md hover:ring-slate-200 hover:bg-slate-50 transition duration-150">
-                          <td className="px-2 py-2 align-middle text-left">
+                          <td className="px-2 py-1 align-middle text-center">
                             {session.status === "active" ? (
                               <button
                                 type="button"
@@ -1745,15 +1757,15 @@ export default function App() {
                                 onClick={() => editSession(session)}
                                 className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 hover:bg-emerald-200"
                               >
-                                Completed
+                                Edit
                               </button>
                             )}
                           </td>
-                          <td className="px-2 py-2 text-slate-600 align-middle text-left whitespace-nowrap">
+                          <td className="px-2 py-1 text-slate-600 align-middle text-center whitespace-nowrap">
                             {session.startTime ? new Date(session.startTime).toLocaleDateString() : ""}
                           </td>
-                          <td className="px-2 py-2 font-medium align-middle text-right whitespace-nowrap tabular-nums">{fmtCurrency(session.buyIn)}</td>
-                          <td className="px-2 py-2 align-middle text-right whitespace-nowrap tabular-nums">
+                          <td className="px-2 py-1 font-medium align-middle text-center whitespace-nowrap tabular-nums">{<span className="pr-1 inline-block">{fmtCurrency(session.buyIn)}</span>}</td>
+                          <td className="px-2 py-1 align-middle text-center whitespace-nowrap tabular-nums">
                             {session.status === "completed" ? (
                               <input
                                 type="number"
@@ -1768,11 +1780,11 @@ export default function App() {
                                     )
                                   );
                                 }}
-                                className="h-9 w-[72px] rounded-xl border border-slate-200 bg-white px-2 py-1 text-right text-xs tabular-nums outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200"
+                                className="h-8 w-[64px] rounded-xl border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200"
                               />
                             ) : "—"}
                           </td>
-                          <td className="px-2 py-2 align-middle text-right whitespace-nowrap tabular-nums">
+                          <td className="px-2 py-1 align-middle text-center whitespace-nowrap tabular-nums">
                             {session.status === "completed" ? (
                               <input
                                 type="number"
@@ -1787,21 +1799,23 @@ export default function App() {
                                     )
                                   );
                                 }}
-                                className="h-9 w-[72px] rounded-xl border border-slate-200 bg-white px-2 py-1 text-right text-xs tabular-nums outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200"
+                                className="h-8 w-[64px] rounded-xl border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200"
                               />
                             ) : "—"}
                           </td>
-                          <td className={`px-2 py-2 font-bold align-middle text-right whitespace-nowrap tabular-nums ${session.actual >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                            {session.status === "completed" ? fmtCurrency(session.actual) : "—"}
+                          <td className={`px-2 py-1 font-bold align-middle text-center whitespace-nowrap tabular-nums ${session.actual >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {session.status === "completed" ? <span className="pr-1 inline-block">{fmtCurrency(session.actual)}</span> : "—"}
                           </td>
-                          <td className={`px-2 py-2 font-bold align-middle text-right whitespace-nowrap tabular-nums ${session.perceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                            {session.status === "completed" ? fmtCurrency(session.perceived) : "—"}
+                          <td className={`px-2 py-1 font-bold align-middle text-center whitespace-nowrap tabular-nums ${session.perceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {session.status === "completed" ? <span className="pr-1 inline-block">{fmtCurrency(session.perceived)}</span> : "—"}
                           </td>
-                          <td className={`px-2 py-2 font-bold align-middle text-right whitespace-nowrap tabular-nums ${runningPerceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                            {session.status === "completed" ? fmtCurrency(runningPerceived) : "—"}
+                          <td className={`px-2 py-1 font-bold align-middle text-center whitespace-nowrap tabular-nums ${runningPerceived >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                            {session.status === "completed" ? <span className="pr-1 inline-block">{fmtCurrency(runningPerceived)}</span> : "—"}
                           </td>
-                          <td className="px-2 py-2 align-middle text-right whitespace-nowrap tabular-nums">{session.status === "completed" ? session.hours.toFixed(2) : activeSession?.id === session.id ? activeHours.toFixed(2) : "—"}</td>
-                          <td className="px-2 py-2 align-middle text-right whitespace-nowrap tabular-nums">
+                          <td className="px-2 py-1 align-middle text-center whitespace-nowrap tabular-nums">
+                            {session.status === "completed" ? session.hours.toFixed(2) : activeSession?.id === session.id ? activeHours.toFixed(2) : "—"}
+                          </td>
+                          <td className="px-2 py-1 align-middle text-center whitespace-nowrap tabular-nums">
                             {session.status === "completed" ? (
                               <input
                                 type="number"
@@ -1811,40 +1825,34 @@ export default function App() {
                                   setSessions((prev) =>
                                     prev.map((s) =>
                                       s.id === session.id
-                                        ? { ...s, pointTotal: value === "" ? undefined : (Number(value) === 0 ? undefined : Number(value)) }
+                                        ? {
+                                            ...s,
+                                            pointTotal: value === "" ? undefined : (Number(value) === 0 ? undefined : Number(value)),
+                                          }
                                         : s
                                     )
                                   );
                                 }}
                                 placeholder="—"
-                                className="h-9 w-[72px] rounded-xl border border-slate-200 bg-white px-2 py-1 text-right text-xs tabular-nums outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200"
+                                className="h-8 w-[64px] rounded-xl border border-slate-200 bg-white px-2 py-1 text-center text-xs tabular-nums outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200"
                               />
                             ) : "—"}
                           </td>
-                          <td className="px-2 py-2 align-middle text-right whitespace-nowrap tabular-nums">{session.status === "completed" ? (session.pointsEarned ?? "—") : "—"}</td>
-                          <td className="px-2 py-2 align-middle text-left">
-                            <div className="flex justify-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => editSession(session)}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                                aria-label="Edit session"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeSession(session.id)}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                                aria-label="Delete session"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
+                          <td className="px-2 py-1 align-middle text-center whitespace-nowrap tabular-nums">
+                            {session.status === "completed" ? (session.pointsEarned ?? "—") : "—"}
                           </td>
-                          <td className="px-2 py-2 align-middle text-left min-w-[90px]">
-                            <div className="font-semibold text-slate-900">{session.game}</div>
-                            {session.notes && <div className="mt-1 max-w-xs truncate text-xs text-slate-500" title={session.notes}>Notes: {session.notes}</div>}
+                          <td className="px-2 py-1 align-middle text-center">
+                            <button
+                              type="button"
+                              onClick={() => removeSession(session.id)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                              aria-label="Delete session"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                          <td className="px-2 py-1 align-middle text-center min-w-[90px]">
+                            {session.notes && <div className="max-w-xs truncate text-xs text-slate-500" title={session.notes}>{session.notes}</div>}
                           </td>
                         </tr>
                       );
