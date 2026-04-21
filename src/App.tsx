@@ -238,9 +238,9 @@ function SmallStat({
   );
 }
 
-// 🔒 HARD SAVED VERSION 2.4 - FINAL LOCKED (WIDTH + HEADER + ALIGNMENT COMPLETE)
-// ✅ V2.4 FINAL — Step 2 polished, Session Result optimized (Buy In vs Cash Out), UI stable
-// ✅ Snapshot confirmed: layout, spacing, result box, and actions fully refined
+// 🔒 HARD SAVED VERSION 2.5 - FINAL LOCKED (STEP 3 + HOURS PRECISION UPDATE)
+// ✅ V2.5 FINAL — Step 3 polished, Override Hours limited to 2 decimals, UI consistent across steps
+// ✅ Snapshot confirmed: Step 2 + Step 3 aligned, inputs controlled, preview stable
 // 🚫 Do not modify core logic without version bump
 export default function App() {
   // 🔹 NEW: Trip tracking
@@ -883,13 +883,12 @@ export default function App() {
                   <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
                     <div><span className="font-semibold text-slate-800">Buy-In:</span> Money you put into play at the start of the session.</div>
                     <div><span className="font-semibold text-slate-800">Shortcuts:</span> Tap = add amount, Hold = replace amount.</div>
-                    <div><span className="font-semibold text-slate-800">Same Buy-In:</span> Reuse the most recent buy-in instantly.</div>
                     <div><span className="font-semibold text-slate-800">One Buy-In:</span> This version does not track rebuys separately.</div>
                   </div>
                 </div>
 
                 <div className="rounded-2xl bg-slate-50 p-4">
-                  <div className="text-sm font-semibold text-slate-900">Step 2 · Finish</div>
+                  <div className="text-sm font-semibold text-slate-900">Step 2 · End</div>
                   <div className="mt-2 text-sm text-slate-600">Enter final results and close the session.</div>
                   <div className="mt-3 space-y-2 text-sm text-slate-600 leading-relaxed">
                     <div><span className="font-semibold text-slate-800">Cash Out:</span> What you walk away with.</div>
@@ -905,6 +904,7 @@ export default function App() {
                     <div>Edit numbers, time, and notes.</div>
                     <div>Point totals automatically update forward.</div>
                     <div>You can edit Cash Out, Out of Play, and Points directly in the table.</div>
+                    <div><span className="font-semibold text-slate-800">Override Hours:</span> Manually adjust session time.</div>
                     <div>Changes update instantly.</div>
                   </div>
                 </div>
@@ -924,7 +924,7 @@ export default function App() {
                       <div><span className="font-semibold text-slate-800">Per Location:</span> Bankroll and game type are saved.</div>
                       <div><span className="font-semibold text-slate-800">Clear This Location:</span> Tap the 🎰 location badge in Sessions, then confirm.</div>
                       <div><span className="font-semibold text-slate-800">Restore:</span> After clearing, you can restore the last cleared sessions or permanently discard that backup.</div>
-                      <div><span className="font-semibold text-slate-800">Sessions Table:</span> Header shows location; Type column shows the game. Restore actions appear here after a clear.</div>
+                      <div><span className="font-semibold text-slate-800">Sessions Table:</span> Header shows location; restore actions appear here after a clear.</div>
                     </div>
                   </div>
 
@@ -957,7 +957,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">Session Edge</h1>
               <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
-                V2.4
+                V2.5
               </span>
             </div>
             <p className="mt-1 text-sm text-slate-500 max-w-xl">
@@ -1012,7 +1012,7 @@ export default function App() {
               </div>
 
               {availableTrips.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
+                <div className="mt-1 flex flex-wrap gap-1.5 sm:gap-1.5">
                   {availableTrips.map((trip) => (
                     <button
                       key={trip}
@@ -1394,7 +1394,7 @@ export default function App() {
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <div className="text-base font-semibold">Step 3 · Edit Session</div>
-                  <div className="text-sm text-slate-500">Adjust or correct a saved session.</div>
+                  <div className="text-sm text-slate-500">Edit saved results and update the session.</div>
                 </div>
                 {editingSessionId && (
                   <button
@@ -1474,8 +1474,8 @@ export default function App() {
                         />
                       </Field>
 
-                      <div className="text-sm font-semibold text-slate-700">
-                        {editForm.pointsEarned === "" ? "—" : `Session Points: ${editForm.pointsEarned}`}
+                      <div className="inline-flex h-8 items-center rounded-2xl bg-slate-100 px-3 text-sm font-semibold text-slate-700">
+                        {editForm.pointsEarned === "" ? "Session Points: —" : `Session Points: ${editForm.pointsEarned}`}
                       </div>
                     </div>
 
@@ -1484,10 +1484,26 @@ export default function App() {
 
                   <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-md ring-1 ring-slate-800">
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_left,white,transparent_60%)] pointer-events-none" />
+                    <div className={`absolute inset-y-0 left-0 w-1 ${editActual >= 0 ? "bg-emerald-400/80" : "bg-red-400/80"}`} />
+
                     <div className="relative flex items-center justify-between">
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Session Result</div>
+                      <div className="text-lg font-semibold leading-tight text-white">
+                        Session Result
+                      </div>
                       <div className={`text-xl font-bold tracking-wide tabular-nums ${editActual >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                        {fmtCurrency(editActual)}
+                        {editActual > 0 ? "+" : ""}{fmtCurrency(editActual)}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2.5 border-t border-white/10 pt-3 text-xs text-slate-400">
+                      <div className="rounded-2xl bg-white/5 px-2 py-2 text-center ring-1 ring-white/10">
+                        <div className="uppercase tracking-[0.12em]">Buy In</div>
+                        <div className="mt-1 text-sm font-semibold text-white tabular-nums">{fmtCurrency(Number(editForm.initialBuyIn || 0))}</div>
+                      </div>
+
+                      <div className="rounded-2xl bg-white/5 px-2 py-2 text-center ring-1 ring-white/10">
+                        <div className="uppercase tracking-[0.12em]">Cash Out</div>
+                        <div className="mt-1 text-sm font-semibold text-white tabular-nums">{fmtCurrency(Number(editForm.cashOut || 0))}</div>
                       </div>
                     </div>
                   </div>
