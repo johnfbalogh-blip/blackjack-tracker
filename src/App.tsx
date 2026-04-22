@@ -188,8 +188,9 @@ function downloadCSV(rows: Session[]) {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }, 100);
-  
-}function Field({ label, children }: { label: string; children: React.ReactNode }) {
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-2">
       <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
