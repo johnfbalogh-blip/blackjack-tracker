@@ -25,6 +25,37 @@ function safeJsonParse<T>(raw: string | null, fallback: T): T {
   }
 }
 
+function safeArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+function safeRecord(value: unknown): Record<string, string> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, string>)
+    : {};
+}
+
+function safeNumber(value: unknown, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function safeDateLabel(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString();
+}
+
+function safeSessions(value: unknown): Session[] {
+  return safeArray<unknown>(value).filter(
+    (item): item is Session => !!item && typeof item === "object"
+  );
+}
+
+function safeString(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : fallback;
+}
+
 type Session = {
   tripId?: string; // NEW: allows grouping sessions into trips
   freeplayUsed?: boolean;
@@ -84,7 +115,8 @@ function fmtElapsed(ms: number) {
 const MIN_COUNTED_SESSION_HOURS = 5 / 60;
 
 function countedHours(hours: number) {
-  return hours >= MIN_COUNTED_SESSION_HOURS ? hours : 0;
+  const value = safeNumber(hours);
+  return value >= MIN_COUNTED_SESSION_HOURS ? value : 0;
 }
 
 function withRunningPerceived(rows: Session[]): Array<Session & { runningPerceived: number }> {
@@ -155,9 +187,9 @@ function downloadCSV(rows: Session[]) {
     ...preparedRows.map((r: Session & { runningPerceived: number }) =>
       [
         r.status,
-        r.startTime ? new Date(r.startTime).toLocaleDateString() : "",
-        `"${(r.location || "").replace(/"/g, '""')}"`,
-        `"${(r.game || "").replace(/"/g, '""')}"`,
+        r.startTime ? safeDateLabel(r.startTime) : "",
+        `"${safeString(r.location).replace(/"/g, '""')}"`,
+        `"${safeString(r.game).replace(/"/g, '""')}"`,
         r.buyIn,
         r.cashOut,
         r.pocket,
@@ -167,10 +199,10 @@ function downloadCSV(rows: Session[]) {
         r.runningPerceived,
         `"${r.startTime || ""}"`,
         `"${r.endTime || ""}"`,
-        r.hours.toFixed(2),
+        safeNumber(r.hours).toFixed(2),
         r.pointTotal ?? "",
         r.pointsEarned ?? "",
-        `"${(r.notes || "").replace(/"/g, '""')}"`,
+        `"${safeString(r.notes).replace(/"/g, '""')}"`,
       ].join(",")
     ),
   ].join("\n");
@@ -246,7 +278,7 @@ function SmallStat({
 // ✅ V2.5 FINAL — Step 3 polished, Override Hours limited to 2 decimals, UI consistent across steps
 // ✅ Snapshot confirmed: Step 2 + Step 3 aligned, inputs controlled, preview stable
 // 🚫 Do not modify core logic without version bump
-// 💾 Save confirmed again by user — latest V2.5 stable snapshot
+// 💾 Save confirmed again by user — latest V2.5 stable snapshot (FINAL SAVE)
 export default function App() {
   // 🔹 NEW: Trip tracking
   const [tripName, setTripName] = useState(() => {
@@ -255,7 +287,9 @@ export default function App() {
     const savedTrip = window.localStorage.getItem("session-edge-trip-name");
     if (savedTrip) return savedTrip;
 
-    const savedSessionsRaw = safeJsonParse<Session[]>(window.localStorage.getItem("blackjack-sessions"), []);
+    const savedSessionsRaw = safeSessions(
+      safeJsonParse<unknown>(window.localStorage.getItem("blackjack-sessions"), [])
+    );
     const firstTrip = savedSessionsRaw.find((s) => s.tripId)?.tripId;
     if (firstTrip) return firstTrip;
 
@@ -265,7 +299,9 @@ export default function App() {
   // 🔹 Per-location session type
   const [locationGames, setLocationGames] = useState<Record<string,string>>(() => {
     if (typeof window === "undefined") return {};
-    return safeJsonParse<Record<string, string>>(window.localStorage.getItem("location-games"), {});
+    return safeRecord(
+      safeJsonParse<unknown>(window.localStorage.getItem("location-games"), {})
+    );
   });
 
   const [globalSettings, setGlobalSettings] = useState({
@@ -301,7 +337,9 @@ export default function App() {
 
   const [sessions, setSessions] = useState<Session[]>(() => {
     if (typeof window === "undefined") return [];
-    return safeJsonParse<Session[]>(window.localStorage.getItem("blackjack-sessions"), []);
+    return safeSessions(
+      safeJsonParse<unknown>(window.localStorage.getItem("blackjack-sessions"), [])
+    );
   });
   const [timerNow, setTimerNow] = useState(Date.now());
   
@@ -311,7 +349,9 @@ export default function App() {
   // 🔹 Per-trip bankroll storage
   const [tripBankrolls, setTripBankrolls] = useState<Record<string, string>>(() => {
     if (typeof window === "undefined") return {};
-    return safeJsonParse<Record<string, string>>(window.localStorage.getItem("trip-bankrolls"), {});
+    return safeRecord(
+      safeJsonParse<unknown>(window.localStorage.getItem("trip-bankrolls"), {})
+    );
   });
 
   const startingBankroll = tripBankrolls[tripName] || "";
@@ -324,8 +364,7 @@ export default function App() {
   };
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [confirmClearAllFinal, setConfirmClearAllFinal] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const [confirmClearLocation, setConfirmClearLocation] = useState(false);
+    const [confirmClearLocation, setConfirmClearLocation] = useState(false);
   const [lastClearedData, setLastClearedData] = useState<{
     sessions: Session[];
     startingBankroll: string;
@@ -370,11 +409,7 @@ export default function App() {
     [sessions]
   );
 
-  const openSessionCount = useMemo(
-    () => sessions.filter((s) => s.status === "active").length,
-    [sessions]
-  );
-
+  
   const openSessionWarning = useMemo(
     () => sessions.find((s) => s.status === "active") || null,
     [sessions]
@@ -430,30 +465,17 @@ export default function App() {
     const totalActual = completedSessions.reduce((sum, s) => sum + s.actual, 0);
     const totalHours = completedSessions.reduce((sum, s) => sum + countedHours(s.hours), 0);
     const hourly = totalHours >= 1 ? totalActual / totalHours : 0;
-    const needsPocketCount = openSessionCount;
     const bankroll = Number(startingBankroll || 0) + totalActual;
 
-    // total session points across all completed sessions
     const sessionPoints = completedSessions.reduce(
       (sum, s) => sum + (s.pointsEarned || 0),
       0
     );
 
-    return { totalActual, totalHours, hourly, needsPocketCount, bankroll, sessionPoints };
-  }, [completedSessions, startingBankroll, openSessionCount]);
+    return { totalActual, totalHours, hourly, bankroll, sessionPoints };
+  }, [completedSessions, startingBankroll]);
 
-  const recentLocations = useMemo(() => {
-    const unique = Array.from(
-      new Set(
-        sessions
-          .map((s) => s.location?.trim())
-          .filter((location): location is string => !!location)
-          .reverse()
-      )
-    ).reverse();
-    return unique.slice(-4).reverse();
-  }, [sessions]);
-
+  
   const activeElapsed = useMemo(() => {
     if (!activeSession?.startTime) return "00:00:00";
     const start = new Date(activeSession.startTime).getTime();
@@ -511,13 +533,79 @@ export default function App() {
     ? editingOriginalPrevPoints
     : previousPointTotal;
 
-  const finishPointsEarned = useMemo(() => {
-    if (finishForm.pointTotal === "") return undefined;
-    const current = Number(finishForm.pointTotal);
-    return current - previousPointTotal;
-  }, [finishForm.pointTotal, previousPointTotal]);
+  
+  const startSession = () => {
+  if (activeSession) return;
+  const buyIn = Number(startForm.buyIn || 0);
+  if (!buyIn) return;
+  const id =
+    globalThis.crypto?.randomUUID?.() ||
+    `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const now = toLocalInputValue();
 
-  const resetStartForm = () => {
+  const session: Session = {
+    id,
+    status: "active",
+    tripId: tripName,
+    location: tripName,
+    game: globalSettings.game,
+    initialBuyIn: buyIn,
+    buyIn: buyIn,
+    cashOut: 0,
+    pocket: 0,
+    actual: 0,
+    perceived: 0,
+    startTime: now,
+    endTime: "",
+    hours: 0,
+    notes: "",
+    freeplayUsed: !!startForm.freeplayUsed,
+    freeplayAmount: Number(startForm.freeplayAmount || 0),
+  };
+
+  setSessions((prev) => [session, ...prev]);
+  setLastBuyIn(startForm.buyIn);
+  resetStartForm();
+};
+
+const finishSession = () => {
+  if (!activeSession) return;
+
+  const cashOut = Number(finishForm.cashOut || 0);
+  const pocket = Number(finishForm.pocket || 0);
+  const endTime = toLocalInputValue();
+  const hours = fmtHours(activeSession.startTime, endTime);
+  const buyIn = Number(activeSession.initialBuyIn || 0);
+  const actual = cashOut + pocket - buyIn;
+  const perceived = cashOut - buyIn;
+
+  let pointTotal = finishForm.pointTotal === "" ? undefined : Number(finishForm.pointTotal);
+  if (pointTotal === 0) pointTotal = previousPointTotal;
+  const pointsEarned = pointTotal === undefined ? undefined : pointTotal - previousPointTotal;
+
+  setSessions((prev) =>
+    prev.map((s) =>
+      s.id === activeSession.id
+        ? {
+            ...s,
+            status: "completed",
+            cashOut,
+            pocket,
+            endTime,
+            hours,
+            actual,
+            perceived,
+            pointTotal,
+            pointsEarned,
+          }
+        : s
+    )
+  );
+
+  resetFinishForm();
+};
+
+const resetStartForm = () => {
     setStartForm({
       buyIn: "",
       freeplayUsed: false,
@@ -534,123 +622,48 @@ export default function App() {
   };
 
   const resetEditForm = () => {
-    setEditingSessionId(null);
-    setEditForm({
-      location: "",
-      game: "Blackjack",
-      initialBuyIn: "",
-      cashOut: "",
-      pocket: "",
-      freeplayUsed: false,
-      freeplayAmount: "",
-      pointTotal: "",
-      pointsEarned: "",
-      startTime: toLocalInputValue(),
-      endTime: toLocalInputValue(),
-      notes: "",
-    });
-    setManualHours("");
-  };
+  setEditingSessionId(null);
+  setEditForm({
+    location: "",
+    game: "Blackjack",
+    initialBuyIn: "",
+    cashOut: "",
+    pocket: "",
+    freeplayUsed: false,
+    freeplayAmount: "",
+    pointTotal: "",
+    pointsEarned: "",
+    startTime: toLocalInputValue(),
+    endTime: toLocalInputValue(),
+    notes: "",
+  });
+  setManualHours("");
+};
 
-  const startSession = () => {
-    setLastBuyIn(startForm.buyIn);
-    if (activeSession) return;
-    const now = toLocalInputValue(new Date(), true);
-    const freeplayUsed = startForm.freeplayUsed;
-    const freeplayAmount = Number(startForm.freeplayAmount || 0);
-    const initialBuyIn = freeplayUsed ? 0 : Number(startForm.buyIn || 0);
-
-    const lastSessionLocation = sessions.find(s => s.location)?.location || "";
-
-    const newSession: Session = {
-      tripId: tripName,
-      id: crypto.randomUUID(),
-      status: "active",
-      location: globalSettings.location.trim() || lastSessionLocation,
-      game: globalSettings.game.trim() || "Blackjack",
-      initialBuyIn,
-      buyIn: initialBuyIn,
-      cashOut: 0,
-      pocket: 0,
-      actual: 0,
-      perceived: 0,
-      freeplayUsed,
-      freeplayAmount,
-      pointTotal: 0,
-      pointsEarned: 0,
-      startTime: now,
-      endTime: now,
-      hours: 0,
-      notes: "",
-    };
-
-    setSessions((prev) => [newSession, ...prev]);
-    resetStartForm();
-    resetFinishForm();
-    setTimerNow(Date.now());
-  };
-
-  
-  const finishSession = () => {
-    if (!activeSession) return;
-    const cashOut = Number(finishForm.cashOut || 0);
-    const pocket = Number(finishForm.pocket || 0);
-    let pointTotal = finishForm.pointTotal === "" ? undefined : Number(finishForm.pointTotal);
-    if (pointTotal === 0) pointTotal = previousPointTotal;
-    const endTime = toLocalInputValue(new Date(), true);
-    const buyIn = activeSession.initialBuyIn;
-    const actual = cashOut + pocket - buyIn;
-    const perceived = cashOut - buyIn;
-    const pointsEarned = pointTotal === undefined ? undefined : pointTotal - previousPointTotal;
-    const hours = fmtHours(activeSession.startTime, endTime);
-
-    setSessions((prev) =>
-      prev.map((session) =>
-        session.id === activeSession.id
-          ? {
-              ...session,
-              status: "completed",
-              buyIn,
-              cashOut,
-              pocket,
-              actual,
-              perceived,
-              pointTotal,
-              pointsEarned,
-              endTime,
-              hours,
-            }
-          : session
-      )
-    );
-    resetFinishForm();
-  };
-
-
-  const editSession = (session: Session) => {
-    const prevPoints = previousPointTotalBySession[session.id] || 0;
-    setEditingOriginalPrevPoints(prevPoints);
-    setEditingSessionId(session.id);
-    setEditForm({
-      location: session.location,
-      game: session.game,
-      initialBuyIn: String(session.initialBuyIn || ""),
-      cashOut: String(session.cashOut || ""),
-      pocket: String(session.pocket || ""),
-      freeplayUsed: !!session.freeplayUsed,
-      freeplayAmount: String(session.freeplayAmount || ""),
-      pointTotal: session.pointTotal !== undefined ? String(session.pointTotal) : "",
-      pointsEarned: session.pointsEarned !== undefined ? String(session.pointsEarned) : "",
-      startTime: session.startTime,
-      endTime: session.endTime,
-      notes: session.notes,
-    });
-    setManualHours(String(session.hours || ""));
-    window.setTimeout(() => {
-      const el = document.getElementById("edit-session-panel");
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
-  };
+const editSession = (session: Session) => {
+  const prevPoints = previousPointTotalBySession[session.id] || 0;
+  setEditingOriginalPrevPoints(prevPoints);
+  setEditingSessionId(session.id);
+  setEditForm({
+    location: safeString(session.location),
+    game: safeString(session.game, "Blackjack"),
+    initialBuyIn: String(session.initialBuyIn || ""),
+    cashOut: String(session.cashOut || ""),
+    pocket: String(session.pocket || ""),
+    freeplayUsed: !!session.freeplayUsed,
+    freeplayAmount: String(session.freeplayAmount || ""),
+    pointTotal: session.pointTotal !== undefined ? String(session.pointTotal) : "",
+    pointsEarned: session.pointsEarned !== undefined ? String(session.pointsEarned) : "",
+    startTime: safeString(session.startTime, toLocalInputValue()),
+    endTime: safeString(session.endTime, toLocalInputValue()),
+    notes: safeString(session.notes),
+  });
+  setManualHours(String(session.hours || ""));
+  window.setTimeout(() => {
+    const el = document.getElementById("edit-session-panel");
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 50);
+};
 
   const updateEditedSession = () => {
     if (!editingSessionId) return;
@@ -675,8 +688,8 @@ export default function App() {
 
         return {
           ...session,
-          location: editForm.location.trim(),
-          game: editForm.game.trim() || "Blackjack",
+          location: safeString(editForm.location).trim(),
+          game: safeString(editForm.game, "Blackjack").trim() || "Blackjack",
           initialBuyIn,
           cashOut,
           pocket,
@@ -690,7 +703,7 @@ export default function App() {
           actual: cashOut + pocket - buyIn,
           perceived: cashOut - buyIn,
           hours,
-          notes: editForm.notes.trim(),
+          notes: safeString(editForm.notes).trim(),
         };
       })
     );
@@ -1783,14 +1796,14 @@ export default function App() {
                             )}
                           </td>
                           <td className="px-2 py-1 text-slate-600 align-middle text-center whitespace-nowrap">
-                            {session.startTime ? new Date(session.startTime).toLocaleDateString() : ""}
+                            {safeDateLabel(session.startTime)}
                           </td>
                           <td className="px-2 py-1 font-medium align-middle text-center whitespace-nowrap tabular-nums">{<span className="pr-1 inline-block">{fmtCurrency(session.buyIn)}</span>}</td>
                           <td className="px-2 py-1 align-middle text-center whitespace-nowrap tabular-nums">
                             {session.status === "completed" ? (
                               <input
                                 type="number"
-                                value={session.cashOut}
+                                value={safeNumber(session.cashOut)}
                                 onChange={(e) => {
                                   const val = Number(e.target.value || 0);
                                   setSessions((prev) =>
@@ -1809,7 +1822,7 @@ export default function App() {
                             {session.status === "completed" ? (
                               <input
                                 type="number"
-                                value={session.pocket}
+                                value={safeNumber(session.pocket)}
                                 onChange={(e) => {
                                   const val = Number(e.target.value || 0);
                                   setSessions((prev) =>
@@ -1834,13 +1847,17 @@ export default function App() {
                             {session.status === "completed" ? <span className="pr-1 inline-block">{fmtCurrency(runningPerceived)}</span> : "—"}
                           </td>
                           <td className="px-2 py-1 align-middle text-center whitespace-nowrap tabular-nums">
-                            {session.status === "completed" ? session.hours.toFixed(2) : activeSession?.id === session.id ? activeHours.toFixed(2) : "—"}
+                            {session.status === "completed"
+                              ? safeNumber(session.hours).toFixed(2)
+                              : activeSession?.id === session.id
+                              ? activeHours.toFixed(2)
+                              : "—"}
                           </td>
                           <td className="px-2 py-1 align-middle text-center whitespace-nowrap tabular-nums">
                             {session.status === "completed" ? (
                               <input
                                 type="number"
-                                value={session.pointTotal ?? ""}
+                                value={session.pointTotal === undefined ? "" : safeNumber(session.pointTotal)}
                                 onChange={(e) => {
                                   const value = e.target.value;
                                   setSessions((prev) =>
