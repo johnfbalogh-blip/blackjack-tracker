@@ -178,15 +178,18 @@ function downloadCSV(rows: Session[]) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
+
   link.href = url;
-  link.setAttribute("download", `session_tracker_${new Date().toISOString().slice(0,10)}.csv`);
+  link.download = `session_tracker_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  window.setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 100);
+  
+}function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-2">
       <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
@@ -242,6 +245,7 @@ function SmallStat({
 // ✅ V2.5 FINAL — Step 3 polished, Override Hours limited to 2 decimals, UI consistent across steps
 // ✅ Snapshot confirmed: Step 2 + Step 3 aligned, inputs controlled, preview stable
 // 🚫 Do not modify core logic without version bump
+// 💾 Save confirmed again by user — latest V2.5 stable snapshot
 export default function App() {
   // 🔹 NEW: Trip tracking
   const [tripName, setTripName] = useState(() => {
